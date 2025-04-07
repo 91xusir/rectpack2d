@@ -1,0 +1,21 @@
+{
+    "MaxRects": [
+      "BestShortSideFit",
+      "BottomLeft",
+      "ContactPoint",
+      "BestLongSideFit",
+      "BestAreaFit"
+    ],
+    "Guillotine": [
+      "BestAreaFit",
+      "BestShortSideFit",
+      "BestLongSideFit",
+      "WorstAreaFit",
+      "WorstShortSideFit",
+      "WorstLongSideFit"
+    ],
+    "Skyline": [
+      "BottomLeft",
+      "MinWaste"
+    ]
+  }
