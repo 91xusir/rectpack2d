@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/disintegration/imaging"
 )
 
 // trimTransparentArea 检测并裁剪图像的透明区域，返回非透明区域的边界
@@ -260,19 +262,29 @@ func nextPowerOfTwo(n int) int {
 }
 
 func rotate90(m image.Image) image.Image {
-	rotate90 := image.NewRGBA(image.Rect(0, 0, m.Bounds().Dy(), m.Bounds().Dx()))
-	// 矩阵旋转
+	rotate90 := image.NewNRGBA(image.Rect(0, 0, m.Bounds().Dy(), m.Bounds().Dx()))
 	for x := m.Bounds().Min.Y; x < m.Bounds().Max.Y; x++ {
 		for y := m.Bounds().Max.X - 1; y >= m.Bounds().Min.X; y-- {
-			//  设置像素点
 			rotate90.Set(m.Bounds().Max.Y-x, y, m.At(y, x))
 		}
 	}
 	return rotate90
 }
+func rotate270(m image.Image) image.Image {
+	rotate270 := image.NewNRGBA(image.Rect(0, 0, m.Bounds().Dy(), m.Bounds().Dx()))
+	// 矩阵旋转
+	for x := m.Bounds().Min.Y; x < m.Bounds().Max.Y; x++ {
+		for y := m.Bounds().Max.X - 1; y >= m.Bounds().Min.X; y-- {
+			// 设置像素点
+			rotate270.Set(x, m.Bounds().Max.X-y, m.At(y, x))
+		}
+	}
+	return rotate270
+
+}
 
 // CreateAtlasImage 创建图集图像
-func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects []image.Rectangle) (*image.RGBA, map[string]SpriteInfo, error) {
+func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects []image.Rectangle) (image.Image, map[string]SpriteInfo, error) {
 	
 	if debugInfo.IsDebug {
 		start := time.Now() // 记录开始时间
@@ -285,7 +297,7 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 	// 获取图集所需的最终尺寸
 	atlasSize := packer.MinSize()
 	spriteInfoMapping := make(map[string]SpriteInfo, len(packer.GetPackedRects()))
-	dstImage := image.NewRGBA(image.Rect(0, 0, atlasSize.Width, atlasSize.Height))
+	dstImage := image.NewNRGBA(image.Rect(0, 0, atlasSize.Width, atlasSize.Height))
 
 	// 创建互斥锁保护对dstImage和spriteInfoMapping的并发访问
 	var mu sync.Mutex
@@ -326,7 +338,8 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 			
 			// 检查是否需要旋转
 			if packer.SourceRectMapW[r.ID] != r.Width { // 旋转了
-				srcImage = rotate90(srcImage)
+				r.Rotated = true
+				srcImage = imaging.Rotate270(srcImage)
 				origHeight := origBounds.Dy()
 				newMinX := origHeight - sourceRect.Min.Y - sourceRect.Dy()
 				newMinY := sourceRect.Min.X
@@ -364,6 +377,12 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 			
 			// 使用互斥锁保护对共享资源的访问
 			mu.Lock()
+			// 绘制图片
+			//dstImage 目标图像
+			//dstRect 源图像在目标图像中的位置 左上坐标,右下坐标
+			//srcImage 源图像
+			//sourceRect.Min 源矩形的左上角坐标
+			//draw.Src 绘制操作的选项，这里是使用源图像的原始像素
 			draw.Draw(dstImage, dstRect, srcImage, sourceRect.Min, draw.Src)
 			spriteInfoMapping[path] = spriteInfo
 			mu.Unlock()

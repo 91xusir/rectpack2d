@@ -31,6 +31,7 @@ type DebugInfo struct {
 	CreateJsonTime       time.Duration
 }
 type Options struct {
+	UnpackPath            string             // 解包路径
 	InputDir              string             // 输入目录
 	OutputDir             string             // 输出目录
 	AtlasMaxWidth         int                // 最大宽度
@@ -200,14 +201,15 @@ func main() {
 		}()
 	}
 	// 定义命令行参数
+	unpackPath := flag.String("unpack", "", "解包路径")
 	inputDirPtr := flag.String("input", "input", "输入目录")
 	outputDirPtr := flag.String("output", "output", "输出目录")
 	paddingPtr := flag.Int("padding", 0, "填充")
 	trimPtr := flag.Bool("trim", false, "修剪透明部分")
 	thresholdPtr := flag.Uint("threshold", 0, "透明度阈值")
 	sortPtr := flag.Bool("sort", true, "按文件名排序")
-	widthPtr := flag.Int("width", 1024, "打包区域宽度")
-	heightPtr := flag.Int("height", 1024, "打包区域高度")
+	widthPtr := flag.Int("width", 4096, "打包区域宽度")
+	heightPtr := flag.Int("height", 4096, "打包区域高度")
 	rotationPtr := flag.Bool("rotate", false, "允许矩形旋转")
 	algorithmPtr := flag.String("algorithm", "MaxRects", "打包算法 (MaxRects, Guillotine, Skyline)")
 	variantPtr := flag.String("variant", "BestAreaFit", "打包算法变体 (BestShortSideFit, BestLongSideFit, BestAreaFit)")
@@ -216,6 +218,7 @@ func main() {
 
 	// 创建选项对象
 	options = Options{
+		UnpackPath:            *unpackPath,
 		InputDir:              *inputDirPtr,
 		OutputDir:             *outputDirPtr,
 		SpritePadding:         *paddingPtr,
@@ -228,6 +231,11 @@ func main() {
 		IsSameDetection:       false,
 		IsAutoSize:            *autoSizePtr,
 		Algorithm:             rectpack.ResolveAlgorithm(*algorithmPtr, *variantPtr),
+	}
+	
+	if options.UnpackPath != ""  {
+		unpack()
+		os.Exit(0)
 	}
 
 	// 创建输出目录（如果不存在）

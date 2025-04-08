@@ -1,32 +1,53 @@
 {
   "meta": {
     "version": "0.1.0",
-    "timestamp": "2025-04-08 14:39:04"
+    "timestamp": "2025-04-08 18:31:36"
   },
   "atlases": [
     {
-      "atlas": "atlas_0.png",
+      "atlas": "atlas.png",
       "sprites": {
-        "10.png": {
-          "filename": "10.png",
+        "1.png": {
+          "filename": "1.png",
           "region": {
             "x": 0,
-            "y": 721,
-            "w": 313,
-            "h": 241
+            "y": 1410,
+            "w": 213,
+            "h": 253
           },
           "sourceSize": {
             "w": 512,
             "h": 512
           },
           "sourceRect": {
-            "x": 77,
-            "y": 107,
-            "w": 313,
-            "h": 241
+            "x": 117,
+            "y": 33,
+            "w": 213,
+            "h": 253
           },
           "trimmed": true,
-          "rotated": false
+          "rotated": true
+        },
+        "10.png": {
+          "filename": "10.png",
+          "region": {
+            "x": 757,
+            "y": 1400,
+            "w": 241,
+            "h": 313
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 164,
+            "y": 77,
+            "w": 241,
+            "h": 313
+          },
+          "trimmed": true,
+          "rotated": true
         },
         "11.png": {
           "filename": "11.png",
@@ -49,11 +70,53 @@
           "trimmed": true,
           "rotated": true
         },
+        "12.png": {
+          "filename": "12.png",
+          "region": {
+            "x": 757,
+            "y": 1085,
+            "w": 367,
+            "h": 315
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 77,
+            "y": 42,
+            "w": 367,
+            "h": 315
+          },
+          "trimmed": true,
+          "rotated": false
+        },
+        "13.png": {
+          "filename": "13.png",
+          "region": {
+            "x": 1183,
+            "y": 739,
+            "w": 373,
+            "h": 353
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 77,
+            "y": 28,
+            "w": 373,
+            "h": 353
+          },
+          "trimmed": true,
+          "rotated": false
+        },
         "14.png": {
           "filename": "14.png",
           "region": {
-            "x": 421,
-            "y": 339,
+            "x": 843,
+            "y": 0,
             "w": 380,
             "h": 374
           },
@@ -70,8 +133,8 @@
           "trimmed": true,
           "rotated": true
         },
-        "16.png": {
-          "filename": "16.png",
+        "15.png": {
+          "filename": "15.png",
           "region": {
             "x": 0,
             "y": 348,
@@ -91,11 +154,95 @@
           "trimmed": true,
           "rotated": true
         },
+        "16.png": {
+          "filename": "16.png",
+          "region": {
+            "x": 421,
+            "y": 339,
+            "w": 381,
+            "h": 373
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 77,
+            "w": 381,
+            "h": 373
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "17.png": {
+          "filename": "17.png",
+          "region": {
+            "x": 1223,
+            "y": 0,
+            "w": 381,
+            "h": 370
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 80,
+            "w": 381,
+            "h": 370
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "18.png": {
+          "filename": "18.png",
+          "region": {
+            "x": 802,
+            "y": 374,
+            "w": 381,
+            "h": 369
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 81,
+            "w": 381,
+            "h": 369
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "19.png": {
+          "filename": "19.png",
+          "region": {
+            "x": 1223,
+            "y": 370,
+            "w": 381,
+            "h": 369
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 81,
+            "w": 381,
+            "h": 369
+          },
+          "trimmed": true,
+          "rotated": true
+        },
         "2.png": {
           "filename": "2.png",
           "region": {
-            "x": 736,
-            "y": 713,
+            "x": 1604,
+            "y": 0,
             "w": 59,
             "h": 50
           },
@@ -112,11 +259,116 @@
           "trimmed": true,
           "rotated": false
         },
+        "20.png": {
+          "filename": "20.png",
+          "region": {
+            "x": 381,
+            "y": 712,
+            "w": 381,
+            "h": 363
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 82,
+            "w": 381,
+            "h": 363
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "21.png": {
+          "filename": "21.png",
+          "region": {
+            "x": 0,
+            "y": 721,
+            "w": 380,
+            "h": 363
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 82,
+            "w": 380,
+            "h": 363
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "22.png": {
+          "filename": "22.png",
+          "region": {
+            "x": 762,
+            "y": 743,
+            "w": 379,
+            "h": 342
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 102,
+            "w": 379,
+            "h": 342
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "23.png": {
+          "filename": "23.png",
+          "region": {
+            "x": 380,
+            "y": 1075,
+            "w": 377,
+            "h": 327
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 90,
+            "y": 102,
+            "w": 377,
+            "h": 327
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "24.png": {
+          "filename": "24.png",
+          "region": {
+            "x": 0,
+            "y": 1084,
+            "w": 360,
+            "h": 326
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 92,
+            "y": 102,
+            "w": 360,
+            "h": 326
+          },
+          "trimmed": true,
+          "rotated": true
+        },
         "3.png": {
           "filename": "3.png",
           "region": {
-            "x": 843,
-            "y": 268,
+            "x": 1556,
+            "y": 1007,
             "w": 154,
             "h": 302
           },
@@ -133,11 +385,32 @@
           "trimmed": true,
           "rotated": true
         },
+        "4.png": {
+          "filename": "4.png",
+          "region": {
+            "x": 552,
+            "y": 1402,
+            "w": 166,
+            "h": 253
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 169,
+            "y": 95,
+            "w": 166,
+            "h": 253
+          },
+          "trimmed": true,
+          "rotated": true
+        },
         "5.png": {
           "filename": "5.png",
           "region": {
-            "x": 843,
-            "y": 0,
+            "x": 1556,
+            "y": 739,
             "w": 178,
             "h": 268
           },
@@ -157,30 +430,30 @@
         "6.png": {
           "filename": "6.png",
           "region": {
-            "x": 381,
-            "y": 713,
-            "w": 355,
-            "h": 284
+            "x": 1124,
+            "y": 1309,
+            "w": 284,
+            "h": 355
           },
           "sourceSize": {
             "w": 512,
             "h": 512
           },
           "sourceRect": {
-            "x": 35,
-            "y": 64,
-            "w": 355,
-            "h": 284
+            "x": 164,
+            "y": 35,
+            "w": 284,
+            "h": 355
           },
           "trimmed": true,
-          "rotated": false
+          "rotated": true
         },
-        "8.png": {
-          "filename": "8.png",
+        "7.png": {
+          "filename": "7.png",
           "region": {
-            "x": 801,
-            "y": 570,
-            "w": 211,
+            "x": 360,
+            "y": 1402,
+            "w": 192,
             "h": 295
           },
           "sourceSize": {
@@ -190,8 +463,29 @@
           "sourceRect": {
             "x": 164,
             "y": 95,
-            "w": 211,
+            "w": 192,
             "h": 295
+          },
+          "trimmed": true,
+          "rotated": true
+        },
+        "8.png": {
+          "filename": "8.png",
+          "region": {
+            "x": 1124,
+            "y": 1092,
+            "w": 295,
+            "h": 211
+          },
+          "sourceSize": {
+            "w": 512,
+            "h": 512
+          },
+          "sourceRect": {
+            "x": 95,
+            "y": 137,
+            "w": 295,
+            "h": 211
           },
           "trimmed": true,
           "rotated": true
@@ -219,308 +513,8 @@
         }
       },
       "size": {
-        "w": 1021,
-        "h": 997
-      }
-    },
-    {
-      "atlas": "atlas_1.png",
-      "sprites": {
-        "1.png": {
-          "filename": "1.png",
-          "region": {
-            "x": 295,
-            "y": 762,
-            "w": 213,
-            "h": 253
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 117,
-            "y": 33,
-            "w": 213,
-            "h": 253
-          },
-          "trimmed": true,
-          "rotated": true
-        },
-        "15.png": {
-          "filename": "15.png",
-          "region": {
-            "x": 0,
-            "y": 0,
-            "w": 373,
-            "h": 381
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 77,
-            "y": 41,
-            "w": 373,
-            "h": 381
-          },
-          "trimmed": true,
-          "rotated": false
-        },
-        "17.png": {
-          "filename": "17.png",
-          "region": {
-            "x": 0,
-            "y": 381,
-            "w": 370,
-            "h": 381
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 80,
-            "y": 41,
-            "w": 370,
-            "h": 381
-          },
-          "trimmed": true,
-          "rotated": false
-        },
-        "18.png": {
-          "filename": "18.png",
-          "region": {
-            "x": 370,
-            "y": 381,
-            "w": 369,
-            "h": 381
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 81,
-            "y": 41,
-            "w": 369,
-            "h": 381
-          },
-          "trimmed": true,
-          "rotated": false
-        },
-        "19.png": {
-          "filename": "19.png",
-          "region": {
-            "x": 373,
-            "y": 0,
-            "w": 369,
-            "h": 381
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 81,
-            "y": 41,
-            "w": 369,
-            "h": 381
-          },
-          "trimmed": true,
-          "rotated": false
-        },
-        "4.png": {
-          "filename": "4.png",
-          "region": {
-            "x": 508,
-            "y": 762,
-            "w": 166,
-            "h": 253
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 169,
-            "y": 95,
-            "w": 166,
-            "h": 253
-          },
-          "trimmed": true,
-          "rotated": true
-        },
-        "7.png": {
-          "filename": "7.png",
-          "region": {
-            "x": 0,
-            "y": 762,
-            "w": 295,
-            "h": 192
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 95,
-            "y": 156,
-            "w": 295,
-            "h": 192
-          },
-          "trimmed": true,
-          "rotated": false
-        }
-      },
-      "size": {
-        "w": 742,
-        "h": 1015
-      }
-    },
-    {
-      "atlas": "atlas_2.png",
-      "sprites": {
-        "13.png": {
-          "filename": "13.png",
-          "region": {
-            "x": 363,
-            "y": 0,
-            "w": 373,
-            "h": 353
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 77,
-            "y": 28,
-            "w": 373,
-            "h": 353
-          },
-          "trimmed": true,
-          "rotated": false
-        },
-        "20.png": {
-          "filename": "20.png",
-          "region": {
-            "x": 0,
-            "y": 0,
-            "w": 363,
-            "h": 381
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 82,
-            "y": 41,
-            "w": 363,
-            "h": 381
-          },
-          "trimmed": true,
-          "rotated": false
-        },
-        "21.png": {
-          "filename": "21.png",
-          "region": {
-            "x": 0,
-            "y": 381,
-            "w": 363,
-            "h": 380
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 82,
-            "y": 42,
-            "w": 363,
-            "h": 380
-          },
-          "trimmed": true,
-          "rotated": false
-        },
-        "22.png": {
-          "filename": "22.png",
-          "region": {
-            "x": 363,
-            "y": 353,
-            "w": 379,
-            "h": 342
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 90,
-            "y": 102,
-            "w": 379,
-            "h": 342
-          },
-          "trimmed": true,
-          "rotated": true
-        },
-        "23.png": {
-          "filename": "23.png",
-          "region": {
-            "x": 363,
-            "y": 695,
-            "w": 377,
-            "h": 327
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 90,
-            "y": 102,
-            "w": 377,
-            "h": 327
-          },
-          "trimmed": true,
-          "rotated": true
-        }
-      },
-      "size": {
-        "w": 742,
-        "h": 1022
-      }
-    },
-    {
-      "atlas": "atlas_3.png",
-      "sprites": {
-        "12.png": {
-          "filename": "12.png",
-          "region": {
-            "x": 0,
-            "y": 0,
-            "w": 315,
-            "h": 367
-          },
-          "sourceSize": {
-            "w": 512,
-            "h": 512
-          },
-          "sourceRect": {
-            "x": 155,
-            "y": 77,
-            "w": 315,
-            "h": 367
-          },
-          "trimmed": true,
-          "rotated": false
-        }
-      },
-      "size": {
-        "w": 315,
-        "h": 367
+        "w": 1734,
+        "h": 1713
       }
     }
   ]
