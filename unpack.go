@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
-	_ "image/jpeg"
-	"image/png"
-	_ "image/png"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -87,7 +83,7 @@ func unpack() error {
 			return fmt.Errorf("打开图集图片失败: %v", err)
 		}
 
-		atlasImg, _, err := image.Decode(atlasFile)
+		atlasImg, err := imaging.Decode(atlasFile)
 		if err != nil {
 			atlasFile.Close()
 			return fmt.Errorf("解码图集图片失败: %v", err)
@@ -98,26 +94,22 @@ func unpack() error {
 		for name, sprite := range atlas.Sprites {
 			// 创建新图片
 			subImg := imaging.New(sprite.Region.W, sprite.Region.H, color.NRGBA{0, 0, 0, 0})
-			
-			draw.Draw(subImg, subImg.Bounds(), atlasImg, image.Point{sprite.Region.X, sprite.Region.Y}, draw.Src)
+			// 绘制子图
+			subImg = imaging.Crop(atlasImg, image.Rect(sprite.Region.X, sprite.Region.Y, sprite.Region.X+sprite.Region.W, sprite.Region.Y+sprite.Region.H))
+
 			// 如果需要处理修剪的图片
 			if sprite.Trimmed {
-				// 创建一个与原始尺寸相同的图片
-				finalImg := image.NewNRGBA(image.Rect(0, 0, sprite.SourceSize.W, sprite.SourceSize.H))
-				// 填充透明背景
-				draw.Draw(finalImg, finalImg.Bounds(), image.NewUniform(color.NRGBA{0, 0, 0, 0}), image.Point{}, draw.Src)
+				// 创建一个与原始尺寸相同的透明图片
+				finalImg := imaging.New(sprite.SourceSize.W, sprite.SourceSize.W, color.NRGBA{0, 0, 0, 0})
 				// 将子图绘制到正确位置
-				draw.Draw(finalImg, image.Rect(sprite.SourceRect.X, sprite.SourceRect.Y,
-					sprite.SourceRect.X+sprite.Region.W, sprite.SourceRect.Y+sprite.Region.H),
-					subImg, image.Point{}, draw.Src)
+				finalImg = imaging.Paste(finalImg, subImg, image.Point{sprite.SourceRect.X, sprite.SourceRect.Y})
 				subImg = finalImg
 			}
 			// 如果需要旋转图片
 			if sprite.Rotated {
 				subImg = imaging.Rotate90(subImg)
-				// subImg = rotate270(subImg).(*image.NRGBA)
 			}
-			// 保存子图
+			// 构建保存路径
 			outputPath := filepath.Join(outputDir, name)
 			// 确保输出子目录存在
 			if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
@@ -128,11 +120,8 @@ func unpack() error {
 			if err != nil {
 				return fmt.Errorf("创建输出文件失败: %v", err)
 			}
-
-			if err := png.Encode(outFile, subImg); err != nil {
-				outFile.Close()
-				return fmt.Errorf("编码PNG失败: %v", err)
-			}
+			// 保存为PNG格式
+			imaging.Encode(outFile, subImg, imaging.PNG)
 			outFile.Close()
 		}
 	}
