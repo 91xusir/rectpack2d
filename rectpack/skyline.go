@@ -18,6 +18,7 @@ type skylinePack struct {
 
 func newSkyline(width, height int, heuristic Heuristic) *skylinePack {
 	var packer skylinePack
+	packer.idMaptoRotateCount = make(map[int]int)
 
 	switch heuristic & fitMask {
 	case MinWaste:
@@ -81,6 +82,7 @@ func (p *skylinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 		unpadRect(&bestNode, padding)
 		bestNode.ID = sizes[bestSizeIndex].ID
 		p.packed = append(p.packed, bestNode)
+		p.idMaptoRotateCount[bestNode.ID] += bestNode.RotatedCount
 		sizes = slices.Delete(sizes, bestSizeIndex, bestSizeIndex+1)
 	}
 
@@ -214,7 +216,10 @@ func (p *skylinePack) findBottomLeft(width, height int, bestHeight, bestWidth, b
 				newNode.Y = y
 				newNode.Width = width
 				newNode.Height = height
-				newNode.Rotated = false
+				if newNode.IsRotated {
+					newNode.RotatedCount++
+				}
+				newNode.IsRotated = false
 			}
 		}
 		if p.allowRotate && p.testFit(i, height, width, &y) {
@@ -226,7 +231,10 @@ func (p *skylinePack) findBottomLeft(width, height int, bestHeight, bestWidth, b
 				newNode.Y = y
 				newNode.Width = height
 				newNode.Height = width
-				newNode.Rotated = true
+				if !newNode.IsRotated {
+					newNode.RotatedCount++
+				}
+				newNode.IsRotated = true
 			}
 		}
 	}
@@ -253,7 +261,10 @@ func (p *skylinePack) findMinWaste(width, height int, bestHeight, bestWastedArea
 				newNode.Y = y
 				newNode.Width = width
 				newNode.Height = height
-				newNode.Rotated = false
+				if newNode.IsRotated {
+					newNode.RotatedCount++
+				}
+				newNode.IsRotated = false
 			}
 		}
 
@@ -266,7 +277,10 @@ func (p *skylinePack) findMinWaste(width, height int, bestHeight, bestWastedArea
 				newNode.Y = y
 				newNode.Width = height
 				newNode.Height = width
-				newNode.Rotated = true
+				if !newNode.IsRotated {
+					newNode.RotatedCount++
+				}
+				newNode.IsRotated = true
 			}
 		}
 	}

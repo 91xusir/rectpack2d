@@ -159,7 +159,7 @@ func outputResult(packer *rectpack.Packer) {
 	fmt.Printf("未打包矩形数量: %d\n\n", len(packer.GetUnpackedRects()))
 }
 
-func packing(sizes []rectpack.Size2D) *rectpack.Packer {
+func packing(sizes []rectpack.Size2D, options* Options) *rectpack.Packer {
 	if debugInfo.IsDebug {
 		start := time.Now() // 记录开始时间
 		defer func() {
@@ -200,6 +200,7 @@ func main() {
 			fmt.Printf("总耗时:%v\n", debugInfo.TotalTime)
 		}()
 	}
+	
 	// 定义命令行参数
 	unpackPath := flag.String("unpack", "", "解包路径")
 	inputDirPtr := flag.String("input", "input", "输入目录")
@@ -212,7 +213,7 @@ func main() {
 	heightPtr := flag.Int("height", 4096, "打包区域高度")
 	rotationPtr := flag.Bool("rotate", false, "允许矩形旋转")
 	algorithmPtr := flag.String("algorithm", "MaxRects", "打包算法 (MaxRects, Guillotine, Skyline)")
-	variantPtr := flag.String("variant", "BestAreaFit", "打包算法变体 (BestShortSideFit, BestLongSideFit, BestAreaFit)")
+	variantPtr := flag.String("variant", "BottomLeft", "打包算法变体 (BestShortSideFit, BestLongSideFit, BestAreaFit)")
 	autoSizePtr := flag.Bool("auto-size", false, "启用自动布局区域收缩优化")
 	flag.Parse()
 
@@ -253,12 +254,12 @@ func main() {
 
 	pakers := make([]*rectpack.Packer, 0)
 	// 创建打包器并打包当前批次的图片
-	packer := packing(size2Ds)
+	packer := packing(size2Ds, &options)
 	// 输出当前图集的打包结果
 	outputResult(packer)
 	pakers = append(pakers, packer)
 	for unpackedRects := packer.GetUnpackedRects(); len(unpackedRects) > 0; {
-		p := packing(unpackedRects)
+		p := packing(unpackedRects, &options)
 		outputResult(p)
 		pakers = append(pakers, p)
 		unpackedRects = p.GetUnpackedRects()

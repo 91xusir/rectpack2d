@@ -19,15 +19,18 @@ type packAlgorithm interface {
 	MaxSize() Size2D
 	// 返回已使用的总面积。
 	GetUsedArea() int
+
+	GetIdMaptoRotateCount() map[int]int
 }
 
 // algorithmBase 是一个包装算法的基础实现
 type algorithmBase struct {
-	packed      []Rect2D // 已包装的矩形
-	maxWidth    int      // 包装器的最大宽度
-	maxHeight   int      // 包装器的最大高度
-	usedArea    int      // 已使用的面积
-	allowRotate bool     // 是否允许旋转矩形
+	packed             []Rect2D // 已包装的矩形
+	maxWidth           int      // 包装器的最大宽度
+	maxHeight          int      // 包装器的最大高度
+	usedArea           int      // 已使用的面积
+	allowRotate        bool     // 是否允许旋转矩形
+	idMaptoRotateCount map[int]int 
 }
 
 // Reset 重置包装器的状态，设置新的最大宽度和最大高度，清空已包装矩形。
@@ -101,4 +104,8 @@ func (p *algorithmBase) Insert(padding int, sizes ...Size2D) []Size2D {
 		}
 	}
 	return unpacked
+}
+
+func (p *algorithmBase) GetIdMaptoRotateCount() map[int]int {
+	return p.idMaptoRotateCount
 }

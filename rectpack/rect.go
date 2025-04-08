@@ -96,8 +96,10 @@ type Rect2D struct {
 	Point2D
 	// Size2D 表示矩形的宽度和高度。
 	Size2D
-	// Rotated 指示矩形是否已旋转。
-	Rotated bool
+
+	IsRotated bool
+
+	RotatedCount int
 }
 
 // NewRect 初始化一个使用指定点和尺寸值的新矩形。

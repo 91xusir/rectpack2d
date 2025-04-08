@@ -14,6 +14,7 @@ type maxRects struct {
 
 func newMaxRects(width, height int, heuristic Heuristic) *maxRects {
 	var p maxRects
+	p.idMaptoRotateCount = make(map[int]int)
 	switch heuristic & fitMask {
 	case BestAreaFit:
 		p.findNode = findPositionBestAreaFit
@@ -67,6 +68,7 @@ func (p *maxRects) Insert(padding int, sizes ...Size2D) []Size2D {
 
 		p.placeRect(bestNode)
 		unpadRect(&bestNode, padding)
+		p.idMaptoRotateCount[bestNode.ID] += bestNode.RotatedCount
 		p.packed = append(p.packed, bestNode)
 
 		last := len(sizes) - 1
@@ -115,9 +117,12 @@ func findPositionBottomLeft(p *maxRects, width, height int) (Rect2D, int, int) {
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
-				bestNode.Rotated = false
 				bestY = topSideY
 				bestX = freeRect.X
+				if bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = false
 			}
 		}
 
@@ -128,9 +133,12 @@ func findPositionBottomLeft(p *maxRects, width, height int) (Rect2D, int, int) {
 				bestNode.Y = freeRect.Y
 				bestNode.Width = height
 				bestNode.Height = width
-				bestNode.Rotated = true
 				bestY = topSideY
 				bestX = freeRect.X
+				if !bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = true
 			}
 		}
 	}
@@ -157,9 +165,12 @@ func findPositionBestShortSideFit(p *maxRects, width, height int) (Rect2D, int, 
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
-				bestNode.Rotated = false
 				bestShortSideFit = shortSideFit
 				bestLongSideFit = longSideFit
+				if bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = false
 			}
 		}
 
@@ -174,9 +185,12 @@ func findPositionBestShortSideFit(p *maxRects, width, height int) (Rect2D, int, 
 				bestNode.Y = freeRect.Y
 				bestNode.Width = height
 				bestNode.Height = width
-				bestNode.Rotated = true
 				bestShortSideFit = flippedShortSideFit
 				bestLongSideFit = flippedLongSideFit
+				if !bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = true
 			}
 		}
 	}
@@ -204,7 +218,10 @@ func findPositionBestLongSideFit(p *maxRects, width, height int) (Rect2D, int, i
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
-				bestNode.Rotated = false
+				if bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = false
 				bestShortSideFit = shortSideFit
 				bestLongSideFit = longSideFit
 			}
@@ -221,9 +238,12 @@ func findPositionBestLongSideFit(p *maxRects, width, height int) (Rect2D, int, i
 				bestNode.Y = freeRect.Y
 				bestNode.Width = height
 				bestNode.Height = width
-				bestNode.Rotated = true
 				bestShortSideFit = shortSideFit
 				bestLongSideFit = longSideFit
+				if !bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = true
 			}
 		}
 	}
@@ -246,7 +266,10 @@ func findPositionBestAreaFit(p *maxRects, width, height int) (Rect2D, int, int) 
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
-				bestNode.Rotated = false
+				if bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = false
 				bestShortSideFit = shortSideFit
 				bestAreaFit = areaFit
 			}
@@ -261,7 +284,10 @@ func findPositionBestAreaFit(p *maxRects, width, height int) (Rect2D, int, int) 
 				bestNode.Y = freeRect.Y
 				bestNode.Width = height
 				bestNode.Height = width
-				bestNode.Rotated = true
+				if !bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = true
 				bestShortSideFit = shortSideFit
 				bestAreaFit = areaFit
 			}
@@ -313,7 +339,10 @@ func findPositionContactPoint(p *maxRects, width, height int) (Rect2D, int, int)
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
-				bestNode.Rotated = false
+				if bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = false
 				bestContactScore = score
 			}
 		}
@@ -324,7 +353,10 @@ func findPositionContactPoint(p *maxRects, width, height int) (Rect2D, int, int)
 				bestNode.Y = freeRect.Y
 				bestNode.Width = height
 				bestNode.Height = width
-				bestNode.Rotated = true
+				if !bestNode.IsRotated {
+					bestNode.RotatedCount++
+				}
+				bestNode.IsRotated = true
 				bestContactScore = score
 			}
 		}

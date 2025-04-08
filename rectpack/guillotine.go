@@ -17,6 +17,8 @@ type guillotinePack struct {
 
 func newGuillotine(width, height int, heuristic Heuristic) *guillotinePack {
 	var packer guillotinePack
+	packer.idMaptoRotateCount = make(map[int]int)
+
 	packer.Merge = true
 	packer.splitMethod = SplitMinimizeArea
 	switch heuristic & fitMask {
@@ -93,12 +95,17 @@ func (p *guillotinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 			Point2D: p.freeRects[bestFreeRect].Point2D,
 			Size2D:  sizes[bestRect],
 		}
-
 		if bestFlipped {
 			newNode.Width, newNode.Height = newNode.Height, newNode.Width
-			newNode.Rotated = true
+			if !newNode.IsRotated {
+				newNode.RotatedCount++
+			}
+			newNode.IsRotated = true
 		} else {
-			newNode.Rotated = false
+			if newNode.IsRotated {
+				newNode.RotatedCount++
+			}
+			newNode.IsRotated = false
 		}
 		p.splitByHeuristic(&p.freeRects[bestFreeRect], &newNode)
 		p.freeRects = slices.Delete(p.freeRects, bestFreeRect, bestFreeRect+1)
@@ -108,6 +115,7 @@ func (p *guillotinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 		}
 		p.usedArea += newNode.Area()
 		unpadRect(&newNode, padding)
+		p.idMaptoRotateCount[newNode.ID]+=newNode.RotatedCount
 		p.packed = append(p.packed, newNode)
 	}
 	return sizes

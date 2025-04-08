@@ -11,9 +11,6 @@ const DefaultSize = 4096
 
 // Packer 包含2D矩形包装器的状态
 type Packer struct {
-	// sourceRectMapH 存储原始矩形的ID到宽度的映射
-	SourceRectMapW map[int]int
-
 	// unpackedSize2Ds 包含尚未包装或无法包装的尺寸
 	unpackedSize2Ds []Size2D
 
@@ -57,6 +54,10 @@ func (p *Packer) MaxSize() Size2D {
 	return p.algo.MaxSize()
 }
 
+func (p *Packer) GetIdMapToRotateCount() map[int]int {
+	return p.algo.GetIdMaptoRotateCount()
+}
+
 // MinSize 包含所有已包装矩形所需的最小尺寸
 func (p *Packer) MinSize() Size2D {
 	var size Size2D
@@ -70,9 +71,6 @@ func (p *Packer) MinSize() Size2D {
 // Insert 向包装器中插入多个尺寸
 // 在线模式下会立即尝试包装，离线模式下只是暂存尺寸
 func (p *Packer) Insert(sizes ...Size2D) []Size2D {
-	for _, size := range sizes {
-		p.SourceRectMapW[size.ID] = size.Width
-	}
 	// 如果启用了在线打包（Online 模式）
 	if p.Online {
 		// 调用具体算法的 Insert 方法，传入 Padding 和尺寸列表，返回插入结果
@@ -188,6 +186,7 @@ func (p *Packer) Pack() bool {
 		slices.Reverse(p.unpackedSize2Ds)
 	}
 	failedPackedSize2Ds := p.algo.Insert(p.padding, p.unpackedSize2Ds...)
+
 	if len(failedPackedSize2Ds) == 0 {
 		p.unpackedSize2Ds = p.unpackedSize2Ds[:0]
 		return true
@@ -244,7 +243,6 @@ func (p *Packer) Shrink() bool {
 	initialSize = max(initialSize, maxWidth)
 	initialSize = max(initialSize, maxHeight)
 
-	// 创建临时存储所有矩形尺寸的切片
 	sizes := make([]Size2D, 0, len(rects))
 	for _, rect := range rects {
 		sizes = append(sizes, rect.Size2D)
@@ -332,6 +330,7 @@ func (p *Packer) Shrink() bool {
 		return true
 	} else {
 		// 恢复原始尺寸
+		fmt.Println("优化空间失败")
 		p.algo.Reset(origSize.Width, origSize.Height)
 		p.algo.Insert(p.padding, sizes...)
 		return false
@@ -368,8 +367,7 @@ func NewPacker(maxWidth, maxHeight int, heuristic Heuristic) (*Packer, error) {
 		return nil, fmt.Errorf("width and height must be greater than 0 (given %vx%x)", maxWidth, maxHeight)
 	}
 	p := &Packer{
-		sortFunc:       SortArea,
-		SourceRectMapW: make(map[int]int),
+		sortFunc:         SortArea,
 	}
 	switch heuristic & typeMask {
 	case MaxRects:
