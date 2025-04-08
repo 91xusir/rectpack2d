@@ -2,14 +2,14 @@ package rectpack
 
 import "math"
 
-type heuristicFunc func(pack *maxRects, width, height int) (Rect, int, int)
+type heuristicFunc func(pack *maxRects, width, height int) (Rect2D, int, int)
 
 type maxRects struct {
 	algorithmBase
 	findNode     heuristicFunc
 	newLastSize  int
-	newFreeRects []Rect
-	freeRects    []Rect
+	newFreeRects []Rect2D
+	freeRects    []Rect2D
 }
 
 func newMaxRects(width, height int, heuristic Heuristic) *maxRects {
@@ -40,10 +40,10 @@ func (p *maxRects) Reset(width, height int) {
 	p.freeRects = append(p.freeRects, NewRect(0, 0, p.maxWidth, p.maxHeight))
 }
 
-func (p *maxRects) Insert(padding int, sizes ...Size) []Size {
+func (p *maxRects) Insert(padding int, sizes ...Size2D) []Size2D {
 	for len(sizes) > 0 {
 
-		var bestNode Rect
+		var bestNode Rect2D
 		bestScore1 := math.MaxInt
 		bestScore2 := math.MaxInt
 		bestRectIndex := -1
@@ -76,7 +76,7 @@ func (p *maxRects) Insert(padding int, sizes ...Size) []Size {
 	return sizes
 }
 
-func (p *maxRects) scoreRect(width, height int) (Rect, int, int) {
+func (p *maxRects) scoreRect(width, height int) (Rect2D, int, int) {
 	newNode, score1, score2 := p.findNode(p, width, height)
 	if newNode.Height == 0 {
 		score1 = math.MaxInt
@@ -85,7 +85,7 @@ func (p *maxRects) scoreRect(width, height int) (Rect, int, int) {
 	return newNode, score1, score2
 }
 
-func (p *maxRects) placeRect(node Rect) {
+func (p *maxRects) placeRect(node Rect2D) {
 	for i := 0; i < len(p.freeRects); {
 		if p.splitFreeNode(&p.freeRects[i], &node) {
 			last := len(p.freeRects) - 1
@@ -99,8 +99,8 @@ func (p *maxRects) placeRect(node Rect) {
 	p.usedArea += node.Area()
 }
 
-func findPositionBottomLeft(p *maxRects, width, height int) (Rect, int, int) {
-	var bestNode Rect
+func findPositionBottomLeft(p *maxRects, width, height int) (Rect2D, int, int) {
+	var bestNode Rect2D
 
 	bestY := math.MaxInt
 	bestX := math.MaxInt
@@ -115,6 +115,7 @@ func findPositionBottomLeft(p *maxRects, width, height int) (Rect, int, int) {
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
+				bestNode.Rotated = false
 				bestY = topSideY
 				bestX = freeRect.X
 			}
@@ -136,8 +137,8 @@ func findPositionBottomLeft(p *maxRects, width, height int) (Rect, int, int) {
 	return bestNode, bestY, bestX
 }
 
-func findPositionBestShortSideFit(p *maxRects, width, height int) (Rect, int, int) {
-	var bestNode Rect
+func findPositionBestShortSideFit(p *maxRects, width, height int) (Rect2D, int, int) {
+	var bestNode Rect2D
 	bestShortSideFit := math.MaxInt
 	bestLongSideFit := math.MaxInt
 
@@ -156,6 +157,7 @@ func findPositionBestShortSideFit(p *maxRects, width, height int) (Rect, int, in
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
+				bestNode.Rotated = false
 				bestShortSideFit = shortSideFit
 				bestLongSideFit = longSideFit
 			}
@@ -182,8 +184,8 @@ func findPositionBestShortSideFit(p *maxRects, width, height int) (Rect, int, in
 	return bestNode, bestShortSideFit, bestLongSideFit
 }
 
-func findPositionBestLongSideFit(p *maxRects, width, height int) (Rect, int, int) {
-	var bestNode Rect
+func findPositionBestLongSideFit(p *maxRects, width, height int) (Rect2D, int, int) {
+	var bestNode Rect2D
 	bestShortSideFit := math.MaxInt
 	bestLongSideFit := math.MaxInt
 
@@ -202,6 +204,7 @@ func findPositionBestLongSideFit(p *maxRects, width, height int) (Rect, int, int
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
+				bestNode.Rotated = false
 				bestShortSideFit = shortSideFit
 				bestLongSideFit = longSideFit
 			}
@@ -227,26 +230,23 @@ func findPositionBestLongSideFit(p *maxRects, width, height int) (Rect, int, int
 	return bestNode, bestShortSideFit, bestLongSideFit
 }
 
-func findPositionBestAreaFit(p *maxRects, width, height int) (Rect, int, int) {
-	var bestNode Rect
-
+func findPositionBestAreaFit(p *maxRects, width, height int) (Rect2D, int, int) {
+	var bestNode Rect2D
 	bestAreaFit := math.MaxInt
 	bestShortSideFit := math.MaxInt
-
 	for _, freeRect := range p.freeRects {
 		areaFit := freeRect.Width*freeRect.Height - width*height
-
 		// Try to place the rectangle in upright (non-flipped) orientation.
 		if freeRect.Width >= width && freeRect.Height >= height {
 			leftoverHoriz := abs(freeRect.Width - width)
 			leftoverVert := abs(freeRect.Height - height)
 			shortSideFit := min(leftoverHoriz, leftoverVert)
-
 			if areaFit < bestAreaFit || (areaFit == bestAreaFit && shortSideFit < bestShortSideFit) {
 				bestNode.X = freeRect.X
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
+				bestNode.Rotated = false
 				bestShortSideFit = shortSideFit
 				bestAreaFit = areaFit
 			}
@@ -256,7 +256,6 @@ func findPositionBestAreaFit(p *maxRects, width, height int) (Rect, int, int) {
 			leftoverHoriz := abs(freeRect.Width - height)
 			leftoverVert := abs(freeRect.Height - width)
 			shortSideFit := min(leftoverHoriz, leftoverVert)
-
 			if areaFit < bestAreaFit || (areaFit == bestAreaFit && shortSideFit < bestShortSideFit) {
 				bestNode.X = freeRect.X
 				bestNode.Y = freeRect.Y
@@ -301,8 +300,8 @@ func (p *maxRects) contactPointScoreNode(x, y, width, height int) int {
 	return score
 }
 
-func findPositionContactPoint(p *maxRects, width, height int) (Rect, int, int) {
-	var bestNode Rect
+func findPositionContactPoint(p *maxRects, width, height int) (Rect2D, int, int) {
+	var bestNode Rect2D
 	bestContactScore := -1
 
 	for _, freeRect := range p.freeRects {
@@ -314,6 +313,7 @@ func findPositionContactPoint(p *maxRects, width, height int) (Rect, int, int) {
 				bestNode.Y = freeRect.Y
 				bestNode.Width = width
 				bestNode.Height = height
+				bestNode.Rotated = false
 				bestContactScore = score
 			}
 		}
@@ -332,7 +332,7 @@ func findPositionContactPoint(p *maxRects, width, height int) (Rect, int, int) {
 	return bestNode, bestContactScore, math.MaxInt
 }
 
-func (p *maxRects) insertNewFreeRectangle(newFreeRect Rect) {
+func (p *maxRects) insertNewFreeRectangle(newFreeRect Rect2D) {
 	for i := 0; i < p.newLastSize; {
 		// This new free rectangle is already accounted for?
 		if p.newFreeRects[i].ContainsRect(newFreeRect) {
@@ -359,7 +359,7 @@ func (p *maxRects) insertNewFreeRectangle(newFreeRect Rect) {
 	p.newFreeRects = append(p.newFreeRects, newFreeRect)
 }
 
-func (p *maxRects) splitFreeNode(freeNode, usedNode *Rect) bool {
+func (p *maxRects) splitFreeNode(freeNode, usedNode *Rect2D) bool {
 	if usedNode.X >= freeNode.X+freeNode.Width || usedNode.X+usedNode.Width <= freeNode.X || usedNode.Y >= freeNode.Y+freeNode.Height || usedNode.Y+usedNode.Height <= freeNode.Y {
 		return false
 	}

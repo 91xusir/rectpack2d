@@ -301,3 +301,45 @@ func (e Heuristic) String() string {
 	}
 	return sb.String()
 }
+
+
+func ResolveAlgorithm(algo, variant string) Heuristic {
+	switch algo {
+	case "MaxRects":
+		switch variant {
+		case "BestShortSideFit":
+			return MaxRectsBSSF
+		case "BottomLeft":
+			return MaxRectsBL
+		case "ContactPoint":
+			return MaxRectsCP
+		case "BestLongSideFit":
+			return MaxRectsBLSF
+		case "BestAreaFit":
+			return MaxRectsBAF
+		}
+	case "Guillotine":
+		switch variant {
+		case "BestAreaFit":
+			return GuillotineBAF
+		case "BestShortSideFit":
+			return GuillotineBSSF
+		case "BestLongSideFit":
+			return GuillotineBLSF
+		case "WorstAreaFit":
+			return GuillotineWAF
+		case "WorstShortSideFit":
+			return GuillotineWSSF
+		case "WorstLongSideFit":
+			return GuillotineWLSF
+		}
+	case "Skyline":
+		switch variant {
+		case "BottomLeft":
+			return SkylineBLF
+		case "MinWaste":
+			return SkylineMinWaste
+		}
+	}
+	return 99
+}

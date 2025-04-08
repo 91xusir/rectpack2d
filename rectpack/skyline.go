@@ -41,10 +41,10 @@ func (p *skylinePack) Reset(width, height int) {
 	}
 }
 
-func (p *skylinePack) Insert(padding int, sizes ...Size) []Size {
+func (p *skylinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 	for len(sizes) > 0 {
 
-		var bestNode Rect
+		var bestNode Rect2D
 		bestScore1 := math.MaxInt
 		bestScore2 := math.MaxInt
 		bestBinIndex := -1
@@ -52,7 +52,7 @@ func (p *skylinePack) Insert(padding int, sizes ...Size) []Size {
 
 		for i, size := range sizes {
 			var score1, score2, index int
-			var newNode Rect
+			var newNode Rect2D
 			padSize(&size, padding)
 
 			switch p.levelSelect {
@@ -87,7 +87,7 @@ func (p *skylinePack) Insert(padding int, sizes ...Size) []Size {
 	return sizes
 }
 
-func (p *skylinePack) Used() float64 {
+func (p *skylinePack) GetAreaUsedRate() float64 {
 	return float64(p.usedArea) / float64(p.maxWidth*p.maxHeight)
 }
 
@@ -155,7 +155,7 @@ func (p *skylinePack) addWaste(index, width, height, y int) {
 		}
 		leftSide := p.skyline[index].X
 		rightSide := min(rectRight, leftSide+p.skyline[index].Width)
-		var waste Rect
+		var waste Rect2D
 		waste.X = leftSide
 		waste.Y = p.skyline[index].Y
 		waste.Width = rightSide - leftSide
@@ -165,7 +165,7 @@ func (p *skylinePack) addWaste(index, width, height, y int) {
 	}
 }
 
-func (p *skylinePack) addLevel(index int, rect *Rect) {
+func (p *skylinePack) addLevel(index int, rect *Rect2D) {
 	// First track all wasted areas and mark them into the waste map if we're using one.
 	if p.wasteMap != nil {
 		p.addWaste(index, rect.Width, rect.Height, rect.Y)
@@ -196,13 +196,13 @@ func (p *skylinePack) addLevel(index int, rect *Rect) {
 	p.mergeSkylines()
 }
 
-func (p *skylinePack) findBottomLeft(width, height int, bestHeight, bestWidth, bestIndex *int) Rect {
+func (p *skylinePack) findBottomLeft(width, height int, bestHeight, bestWidth, bestIndex *int) Rect2D {
 	*bestHeight = math.MaxInt
 	*bestIndex = -1
 	// Used to break ties if there are nodes at the same level. Then pick the narrowest one.
 	*bestWidth = math.MaxInt
 
-	var newNode Rect
+	var newNode Rect2D
 	for i := 0; i < len(p.skyline); i++ {
 		var y int
 		if p.testFit(i, width, height, &y) {
@@ -214,6 +214,7 @@ func (p *skylinePack) findBottomLeft(width, height int, bestHeight, bestWidth, b
 				newNode.Y = y
 				newNode.Width = width
 				newNode.Height = height
+				newNode.Rotated = false
 			}
 		}
 		if p.allowRotate && p.testFit(i, height, width, &y) {
@@ -233,11 +234,11 @@ func (p *skylinePack) findBottomLeft(width, height int, bestHeight, bestWidth, b
 	return newNode
 }
 
-func (p *skylinePack) findMinWaste(width, height int, bestHeight, bestWastedArea, bestIndex *int) Rect {
+func (p *skylinePack) findMinWaste(width, height int, bestHeight, bestWastedArea, bestIndex *int) Rect2D {
 	*bestHeight = math.MaxInt
 	*bestWastedArea = math.MaxInt
 	*bestIndex = -1
-	var newNode Rect
+	var newNode Rect2D
 
 	for i := 0; i < len(p.skyline); i++ {
 		var y int
@@ -252,6 +253,7 @@ func (p *skylinePack) findMinWaste(width, height int, bestHeight, bestWastedArea
 				newNode.Y = y
 				newNode.Width = width
 				newNode.Height = height
+				newNode.Rotated = false
 			}
 		}
 

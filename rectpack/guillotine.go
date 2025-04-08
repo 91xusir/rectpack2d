@@ -5,14 +5,14 @@ import (
 	"slices"
 )
 
-type scoreFunc func(width, height int, freeRect *Rect) int
+type scoreFunc func(width, height int, freeRect *Rect2D) int
 
 type guillotinePack struct {
 	algorithmBase
 	Merge       bool
 	splitMethod Heuristic
 	scoreRect   scoreFunc
-	freeRects   []Rect
+	freeRects   []Rect2D
 }
 
 func newGuillotine(width, height int, heuristic Heuristic) *guillotinePack {
@@ -25,11 +25,11 @@ func newGuillotine(width, height int, heuristic Heuristic) *guillotinePack {
 	case BestLongSideFit:
 		packer.scoreRect = scoreBestLong
 	case WorstAreaFit:
-		packer.scoreRect = func(w, h int, r *Rect) int { return -scoreBestArea(w, h, r) }
+		packer.scoreRect = func(w, h int, r *Rect2D) int { return -scoreBestArea(w, h, r) }
 	case WorstShortSideFit:
-		packer.scoreRect = func(w, h int, r *Rect) int { return -scoreBestShort(w, h, r) }
+		packer.scoreRect = func(w, h int, r *Rect2D) int { return -scoreBestShort(w, h, r) }
 	case WorstLongSideFit:
-		packer.scoreRect = func(w, h int, r *Rect) int { return -scoreBestLong(w, h, r) }
+		packer.scoreRect = func(w, h int, r *Rect2D) int { return -scoreBestLong(w, h, r) }
 	default:
 		packer.scoreRect = scoreBestArea
 	}
@@ -44,7 +44,7 @@ func (p *guillotinePack) Reset(width, height int) {
 	p.freeRects = append(p.freeRects, NewRect(0, 0, p.maxWidth, p.maxHeight))
 }
 
-func (p *guillotinePack) Insert(padding int, sizes ...Size) []Size {
+func (p *guillotinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 	bestFreeRect := 0
 	bestRect := 0
 	bestFlipped := false
@@ -89,14 +89,16 @@ func (p *guillotinePack) Insert(padding int, sizes ...Size) []Size {
 		if bestScore == math.MaxInt {
 			break
 		}
-		newNode := Rect{
-			Point: p.freeRects[bestFreeRect].Point,
-			Size:  sizes[bestRect],
+		newNode := Rect2D{
+			Point2D: p.freeRects[bestFreeRect].Point2D,
+			Size2D:  sizes[bestRect],
 		}
 
 		if bestFlipped {
 			newNode.Width, newNode.Height = newNode.Height, newNode.Width
 			newNode.Rotated = true
+		} else {
+			newNode.Rotated = false
 		}
 		p.splitByHeuristic(&p.freeRects[bestFreeRect], &newNode)
 		p.freeRects = slices.Delete(p.freeRects, bestFreeRect, bestFreeRect+1)
@@ -111,28 +113,28 @@ func (p *guillotinePack) Insert(padding int, sizes ...Size) []Size {
 	return sizes
 }
 
-func scoreBestArea(width, height int, freeRect *Rect) int {
+func scoreBestArea(width, height int, freeRect *Rect2D) int {
 	return freeRect.Width*freeRect.Height - width*height
 }
 
-func scoreBestShort(width, height int, freeRect *Rect) int {
+func scoreBestShort(width, height int, freeRect *Rect2D) int {
 	leftoverHoriz := abs(freeRect.Width - width)
 	leftoverVert := abs(freeRect.Height - height)
 	return min(leftoverHoriz, leftoverVert)
 }
 
-func scoreBestLong(width, height int, freeRect *Rect) int {
+func scoreBestLong(width, height int, freeRect *Rect2D) int {
 	leftoverHoriz := abs(freeRect.Width - width)
 	leftoverVert := abs(freeRect.Height - height)
 	return max(leftoverHoriz, leftoverVert)
 }
 
-func (p *guillotinePack) splitAlongAxis(freeRect, placedRect *Rect, splitHorizontal bool) {
-	var bottom Rect
+func (p *guillotinePack) splitAlongAxis(freeRect, placedRect *Rect2D, splitHorizontal bool) {
+	var bottom Rect2D
 	bottom.X = freeRect.X
 	bottom.Y = freeRect.Y + placedRect.Height
 	bottom.Height = freeRect.Height - placedRect.Height
-	var right Rect
+	var right Rect2D
 	right.X = freeRect.X + placedRect.Width
 	right.Y = freeRect.Y
 	right.Width = freeRect.Width - placedRect.Width
@@ -151,8 +153,8 @@ func (p *guillotinePack) splitAlongAxis(freeRect, placedRect *Rect, splitHorizon
 	}
 }
 
-func (p *guillotinePack) findPosition(width, height int, nodeIndex *int) Rect {
-	var bestNode Rect
+func (p *guillotinePack) findPosition(width, height int, nodeIndex *int) Rect2D {
+	var bestNode Rect2D
 	bestScore := math.MaxInt
 	for i, freeRect := range p.freeRects {
 		if width == freeRect.Width && height == freeRect.Height {
@@ -196,7 +198,7 @@ func (p *guillotinePack) findPosition(width, height int, nodeIndex *int) Rect {
 	return bestNode
 }
 
-func (p *guillotinePack) splitByHeuristic(freeRect, placedRect *Rect) {
+func (p *guillotinePack) splitByHeuristic(freeRect, placedRect *Rect2D) {
 	w := freeRect.Width - placedRect.Width
 	h := freeRect.Height - placedRect.Height
 	var splitHorizontal bool
