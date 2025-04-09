@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Skyline_Algorithm_Visualization</title>
+  <style>
+    canvas { border: 1px solid #ccc; background: #fff; }
+  </style>
+</head>
+<body>
+  <h3>Skyline_Algorithm_Visualization</h3>
+  <canvas id="canvas" width="800" height="800"></canvas>
+  <script>
+    const data = [{x:0,y:0,l:116,w:113},{x:113,y:0,l:116,w:111},{x:224,y:0,l:116,w:99},{x:323,y:0,l:116,w:20},{x:343,y:0,l:95,w:57},{x:343,y:95,l:89,w:57},{x:0,y:116,l:100,w:113},{x:113,y:116,l:100,w:108},{x:221,y:116,l:81,w:102},{x:323,y:116,l:58,w:20},{x:329,y:184,l:117,w:71},{x:221,y:197,l:54,w:108},{x:0,y:216,l:88,w:113},{x:113,y:216,l:88,w:99},{x:212,y:251,l:107,w:117},{x:374,y:301,l:99,w:26},{x:330,y:301,l:94,w:44},{x:0,y:304,l:96,w:98},{x:98,y:304,l:96,w:84},{x:182,y:304,l:73,w:30},{x:238,y:358,l:37,w:92},{x:182,y:377,l:23,w:50}];
+    const isRotate = [0,1,0,0,1,0,0,1,1,0,1,0,0,0,0,0,1,0,0,0,1,0];
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    let maxX = 0, maxY = 0;
+    data.forEach(rect => {
+      const x2 = rect.x + rect.w;
+      const y2 = rect.y + rect.l;
+      if (x2 > maxX) maxX = x2;
+      if (y2 > maxY) maxY = y2;
+    });
+    const scale = Math.min(canvas.width / maxX, canvas.height / maxY);
+    data.forEach((rect, i) => {
+      const color = "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, "0");
+      const x = rect.x * scale;
+      const y = rect.y * scale;
+      const w = rect.w * scale;
+      const h = rect.l * scale;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = "black";
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = "black";
+      ctx.font = "12px Arial";
+      ctx.fillText(i + (isRotate[i] === 1 ? " (R)" : ""), x + 3, y + 12);
+    });
+  </script>
+</body>
+</html>

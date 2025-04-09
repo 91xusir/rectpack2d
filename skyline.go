@@ -3,18 +3,17 @@ package main
 import (
 	"container/heap"
 	"fmt"
-	"math"
 )
 
-// Box 代表盒子结构体
+// Bin 代表盒子结构体
 
-type Box struct {
+type Bin struct {
 	// The width of the boundary
 
-	W float64
+	W int
 	// The height of the boundary
 
-	H float64
+	H int
 	// Rectangle list
 
 	ReqPackRectList []*Rect
@@ -26,12 +25,12 @@ type Box struct {
 // Rect represents a rectangular structure
 
 type Rect struct {
-	id uint
-	w  float64
-	h  float64
+	id int
+	w  int
+	h  int
 }
 
-func NewRect(id uint, w float64, h float64) *Rect {
+func NewRect(id int, w int, h int) *Rect {
 	return &Rect{
 		id: id,
 		w:  w,
@@ -54,16 +53,16 @@ func CopySlice(rs []*Rect) []*Rect {
 // A skyline structure
 
 type SkyLine struct {
-	x   float64
-	y   float64
-	len float64
+	x   int
+	y   int
+	len int
 }
 
 func (s *SkyLine) String() string {
-	return fmt.Sprintf("SkyLine{x=%f, y=%f, len=%f}", s.x, s.y, s.len)
+	return fmt.Sprintf("SkyLine{x=%d, y=%d, len=%d}", s.x, s.y, s.len)
 }
 
-func NewSkyLine(x, y, len float64) *SkyLine {
+func NewSkyLine(x, y, len int) *SkyLine {
 	return &SkyLine{
 		x:   x,
 		y:   y,
@@ -101,16 +100,15 @@ func (h *SkyLineHeap) Pop() any {
 // 注意：x和y表示左上角的坐标，w和h表示矩形的宽和高
 
 type PackedRect struct {
-	id        uint
-	x         float64
-	y         float64
-	w         float64
-	h         float64
+	id        int
+	x         int
+	y         int
+	w         int
+	h         int
 	isRotated bool // 是否旋转
-
 }
 
-func NewPackedRect(id uint, x, y, w, h float64, isRotate bool) *PackedRect {
+func NewPackedRect(id int, x, y, w, h int, isRotate bool) *PackedRect {
 	return &PackedRect{
 		id:        id,
 		isRotated: isRotate,
@@ -126,13 +124,13 @@ func NewPackedRect(id uint, x, y, w, h float64, isRotate bool) *PackedRect {
 type PackResult struct {
 	packedRectList []*PackedRect // Packed rectangle list
 
-	totalS float64 // Total area
+	totalS int // Total area
 
 	rate float64 // Fill rate
 
 }
 
-func NewSolution(packedRectList []*PackedRect, totalS float64, rate float64) *PackResult {
+func NewSolution(packedRectList []*PackedRect, totalS int, rate float64) *PackResult {
 	return &PackResult{
 		packedRectList: packedRectList,
 		totalS:         totalS,
@@ -143,9 +141,9 @@ func NewSolution(packedRectList []*PackedRect, totalS float64, rate float64) *Pa
 // SkyLinePacking 主结构体
 
 type SkyLinePacking struct {
-	w float64 // Total width
+	w int // Total width
 
-	h float64 // Total height
+	h int // Total height
 
 	reqPackRectList []*Rect // Rectangle to be packaged
 
@@ -157,7 +155,7 @@ type SkyLinePacking struct {
 
 // Constructor
 
-func NewSkyLinePacking(isRotateEnable bool, w, h float64, rects []*Rect) *SkyLinePacking {
+func NewSkyLinePacking(isRotateEnable bool, w, h int, rects []*Rect) *SkyLinePacking {
 	sp := &SkyLinePacking{
 		w:               w,
 		h:               h,
@@ -173,7 +171,7 @@ func NewSkyLinePacking(isRotateEnable bool, w, h float64, rects []*Rect) *SkyLin
 func (sp *SkyLinePacking) Pack() (*PackResult, error) {
 	// Used to record the total area of ​​the rectangle that has been placed
 
-	totalS := 0.0
+	totalS := 0
 	// Used to store already placed rectangles
 
 	packedRectList := make([]*PackedRect, 0, len(sp.reqPackRectList))
@@ -182,16 +180,12 @@ func (sp *SkyLinePacking) Pack() (*PackResult, error) {
 	used := make([]bool, len(sp.reqPackRectList))
 	for sp.skyLineQueue.Len() != 0 && len(packedRectList) < len(sp.reqPackRectList) {
 		// Get the current lowest and leftmost skyline (retrieve the first element of the queue)
-
 		skyLine := heap.Pop(&sp.skyLineQueue).(*SkyLine)
 		// Initialize hl and hr
-
 		hl := sp.h - skyLine.y
 		hr := sp.h - skyLine.y
 		count := 0
-
 		// Iterate through the skyline queue in sequence, and get hl and hr according to the skyline and skyline queues
-
 		for _, line := range sp.skyLineQueue {
 			if comparefloat64(line.x+line.len, skyLine.x) == 0 {
 				hl = line.y - skyLine.y
@@ -205,19 +199,14 @@ func (sp *SkyLinePacking) Pack() (*PackResult, error) {
 			}
 		}
 		// Record the index of the maximum score rectangle, the maximum score
-
 		maxRectIndex, maxScore := -1, -1
 		// Record whether the rectangle with the maximum score rotates
-
 		isRotate := false
 		// Iterate through each rectangle and select the largest rating rectangle for placement
-
 		for i := range sp.reqPackRectList {
 			// The rectangle has not been placed before proceeding
-
 			if !used[i] {
 				// No rotation
-
 				score := sp.score(sp.reqPackRectList[i].w, sp.reqPackRectList[i].h, skyLine, hl, hr)
 				if score > maxScore {
 					maxScore = score
@@ -225,7 +214,6 @@ func (sp *SkyLinePacking) Pack() (*PackResult, error) {
 					isRotate = false
 				}
 				// Rotational situation
-
 				if sp.isRotateEnable {
 					rotateScore := sp.score(sp.reqPackRectList[i].h, sp.reqPackRectList[i].w, skyLine, hl, hr)
 					if rotateScore > maxScore {
@@ -269,7 +257,11 @@ func (sp *SkyLinePacking) Pack() (*PackResult, error) {
 			sp.combineSkylines(skyLine)
 		}
 	}
-	return &PackResult{packedRectList, totalS, totalS / (sp.w * sp.h)}, nil
+	return &PackResult{
+		packedRectList: packedRectList,
+		totalS:         totalS,
+		rate:           float64(totalS) / float64(sp.w*sp.h),
+	}, nil
 }
 
 // placeLeft 将矩形靠左放
@@ -302,7 +294,7 @@ func (sp *SkyLinePacking) placeRight(rect *Rect, skyLine *SkyLine, isRotate bool
 
 // addSkyLineInQueue 将指定属性的天际线加入天际线队列
 
-func (sp *SkyLinePacking) addSkyLineInQueue(x, y, len float64) {
+func (sp *SkyLinePacking) addSkyLineInQueue(x, y, len int) {
 	if comparefloat64(len, 0.0) == 1 {
 		skyLine := &SkyLine{x: x, y: y, len: len}
 		heap.Push(&sp.skyLineQueue, skyLine)
@@ -337,7 +329,7 @@ func (sp *SkyLinePacking) combineSkylines(skyLine *SkyLine) {
 
 // score 对矩形进行评分，如果评分为 -1 ，则说明该矩形不能放置在该天际线上
 
-func (sp *SkyLinePacking) score(w, h float64, skyLine *SkyLine, hl, hr float64) int {
+func (sp *SkyLinePacking) score(w, h int, skyLine *SkyLine, hl, hr int) int {
 	// The current skyline length is smaller than the current rectangle width and cannot be put down
 
 	if comparefloat64(skyLine.len, w) == -1 {
@@ -369,7 +361,7 @@ func (sp *SkyLinePacking) score(w, h float64, skyLine *SkyLine, hl, hr float64) 
 		} else if comparefloat64(w, skyLine.len) == -1 && comparefloat64(h, hl) != 0 {
 			score = 0
 		} else {
-			panic(fmt.Sprintf("w = %f , h = %f , hl = %f , hr = %f , skyline = %+v", w, h, hl, hr, skyLine))
+			panic(fmt.Sprintf("w = %d , h = %d , hl = %d , hr = %d , skyline = %+v", w, h, hl, hr, skyLine))
 		}
 	} else {
 		if comparefloat64(w, skyLine.len) == 0 && comparefloat64(h, hr) == 0 {
@@ -389,7 +381,7 @@ func (sp *SkyLinePacking) score(w, h float64, skyLine *SkyLine, hl, hr float64) 
 		} else if comparefloat64(w, skyLine.len) == -1 && comparefloat64(h, hr) != 0 {
 			score = 0
 		} else {
-			panic(fmt.Sprintf("w = %f , h = %f , hl = %f , hr = %f , skyline = %+v", w, h, hl, hr, skyLine))
+			panic(fmt.Sprintf("w = %d , h = %d , hl = %d , hr = %d , skyline = %+v", w, h, hl, hr, skyLine))
 		}
 	}
 	return score
@@ -397,8 +389,8 @@ func (sp *SkyLinePacking) score(w, h float64, skyLine *SkyLine, hl, hr float64) 
 
 // Compare the size of two floating point numbers, with an accuracy of 1e 6
 
-func comparefloat64(a, b float64) int {
-	if math.Abs(a-b) < 1e-6 {
+func comparefloat64(a, b int) int {
+	if a == b {
 		return 0
 	}
 	if a < b {

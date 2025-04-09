@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"rectpack2d/rectpack"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,6 +23,47 @@ func printElapsed(t time.Duration) {
 	default:
 		fmt.Printf("Time used: %.2f s\n", t.Seconds())
 	}
+}
+
+func Test_maxrects(t *testing.T) {
+	path := "data.txt"
+	box, err := GetInstance(path)
+	if err != nil {
+		fmt.Printf("read file error: %v\n", err)
+		return
+	}
+	size2Ds := make([]rectpack.Size2D, len(box.ReqPackRectList))
+	for i := range box.ReqPackRectList {
+		size2Ds = append(size2Ds, rectpack.NewSize2DByID(box.ReqPackRectList[i].w, box.ReqPackRectList[i].h, box.ReqPackRectList[i].id))
+	}
+	sort.Slice(size2Ds, func(i, j int) bool {
+		return size2Ds[i].Width*size2Ds[i].Height < size2Ds[j].Width*size2Ds[j].Height
+	})
+
+	packer, _ := rectpack.NewPacker(400, 400, rectpack.MaxRectsBSSF)
+	packer.Insert(size2Ds...)
+	startTime := time.Now()
+
+	packer.Pack()
+	elapsedTime := time.Since(startTime)
+	printElapsed(elapsedTime)
+
+	rects := packer.GetPackedRects()
+	r := make([]*PackedRect, len(rects))
+	for i := range rects {
+		r[i] = &PackedRect{}
+		r[i].id = rects[i].ID
+		r[i].x = rects[i].X
+		r[i].y = rects[i].Y
+		r[i].w = rects[i].Width
+		r[i].h = rects[i].Height
+		r[i].isRotated = false
+	}
+	fmt.Printf("packed rectangles: %d\n", len(packer.GetPackedRects()))
+	fmt.Printf("utilization rate: %f\n", packer.GetAreaUsedRate(false))
+	generateVisualizationHTML(r, "MaxRect_Algorithm_Visualization")
+
+	// packer.Shrink()
 }
 
 func Test_skyline(t *testing.T) {
@@ -63,13 +105,18 @@ func Test_skyline(t *testing.T) {
 	printElapsed(elapsedTime)
 	fmt.Printf("packed rectangles: %d\n", len(solution.packedRectList))
 	fmt.Printf("utilization rate: %f\n", solution.rate)
-	// Output drawing data
 
-	strings1 := make([]string, len(solution.packedRectList))
-	strings2 := make([]string, len(solution.packedRectList))
-	for i, placeItem := range solution.packedRectList {
-		strings1[i] = fmt.Sprintf("{x:%v,y:%v,l:%v,w:%v}", placeItem.x, placeItem.y, placeItem.h, placeItem.w)
-		if placeItem.isRotated {
+	// 使用提取的函数生成可视化HTML
+	generateVisualizationHTML(solution.packedRectList, "Skyline_Algorithm_Visualization")
+}
+
+// generateVisualizationHTML 生成矩形排列的可视化HTML文件
+func generateVisualizationHTML(packedRects []*PackedRect, title string) {
+	strings1 := make([]string, len(packedRects))
+	strings2 := make([]string, len(packedRects))
+	for i, rect := range packedRects {
+		strings1[i] = fmt.Sprintf("{x:%v,y:%v,l:%v,w:%v}", rect.x, rect.y, rect.h, rect.w)
+		if rect.isRotated {
 			strings2[i] = "1"
 		} else {
 			strings2[i] = "0"
@@ -84,13 +131,13 @@ func Test_skyline(t *testing.T) {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Visualization</title>
+  <title>%s</title>
   <style>
     canvas { border: 1px solid #ccc; background: #fff; }
   </style>
 </head>
 <body>
-  <h3>Visualization</h3>
+  <h3>%s</h3>
   <canvas id="canvas" width="800" height="800"></canvas>
   <script>
     const data = [%v];
@@ -122,22 +169,17 @@ func Test_skyline(t *testing.T) {
   </script>
 </body>
 </html>
-`, strings.Join(strings1, ","), strings.Join(strings2, ","))
+`, title, title, strings.Join(strings1, ","), strings.Join(strings2, ","))
 
-	err = os.WriteFile("output.html", []byte(html), 0644)
+	err := os.WriteFile(title+".html", []byte(html), 0644)
 	if err != nil {
 		fmt.Println("write file error:", err)
 	} else {
 		fmt.Println("✅ Visual HTML file generated: output.html")
 	}
-
 }
 
-// 生成 UUID 字符串
-
-// GetInstance Read data from a file and creates a Box instance
-
-func GetInstance(path string) (*Box, error) {
+func GetInstance(path string) (*Bin, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -145,20 +187,20 @@ func GetInstance(path string) (*Box, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	box := &Box{}
+	box := &Bin{}
 	var rectList []*Rect
 	isFirstLine := true
-	var id uint = 0
+	id := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.Fields(line)
 
 		if isFirstLine {
-			w, err := strconv.ParseFloat(parts[0], 64)
+			w, err := strconv.Atoi(parts[0])
 			if err != nil {
 				return nil, fmt.Errorf("an error in parsing width: %w", err)
 			}
-			h, err := strconv.ParseFloat(parts[1], 64)
+			h, err := strconv.Atoi(parts[1])
 			if err != nil {
 				return nil, fmt.Errorf("an error in parsing height: %w", err)
 			}
@@ -169,11 +211,11 @@ func GetInstance(path string) (*Box, error) {
 			box.IsRotateEnable = rotateEnable
 			isFirstLine = false
 		} else {
-			w, err := strconv.ParseFloat(parts[0], 64)
+			w, err := strconv.Atoi(parts[0])
 			if err != nil {
 				return nil, fmt.Errorf("an error in parsing rectangle width: %w", err)
 			}
-			h, err := strconv.ParseFloat(parts[1], 64)
+			h, err := strconv.Atoi(parts[1])
 			if err != nil {
 				return nil, fmt.Errorf("an error in parsing rectangle height: %w", err)
 			}
