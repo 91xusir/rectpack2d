@@ -372,8 +372,6 @@ func NewPacker(maxWidth, maxHeight int, heuristic Heuristic) (*Packer, error) {
 	switch heuristic & typeMask {
 	case MaxRects:
 		p.algo = newMaxRects(maxWidth, maxHeight, heuristic)
-	case Skyline:
-		p.algo = newSkyline(maxWidth, maxHeight, heuristic)
 	case Guillotine:
 		p.algo = newGuillotine(maxWidth, maxHeight, heuristic)
 	default:
@@ -395,6 +393,6 @@ func NewPacker(maxWidth, maxHeight int, heuristic Heuristic) (*Packer, error) {
 //
 //	*Packer - 初始化成功的包装器实例
 func NewDefaultPacker() *Packer {
-	packer, _ := NewPacker(DefaultSize, DefaultSize, SkylineBLF)
+	packer, _ := NewPacker(DefaultSize, DefaultSize, MaxRectsBAF)
 	return packer
 }

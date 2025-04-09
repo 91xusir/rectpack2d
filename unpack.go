@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -120,7 +121,10 @@ func unpack() error {
 				// 创建一个与原始尺寸相同的透明图片
 				finalImg := imaging.New(sprite.SourceSize.W, sprite.SourceSize.H, color.NRGBA{0, 0, 0, 0})
 				// 将子图绘制到正确位置
-				finalImg = imaging.Paste(finalImg, subImg, image.Point{sprite.SourceRect.X, sprite.SourceRect.Y})
+				dstPoint := image.Point{sprite.SourceRect.X, sprite.SourceRect.Y}                // 粘贴起始点
+				dstRect := image.Rectangle{Min: dstPoint, Max: dstPoint.Add(subImg.Bounds().Size())} // 目标区域：左上角为 dstPoint，大小与 subImg 相同
+				draw.Draw(finalImg, dstRect,subImg, image.Point{0,0}, draw.Src)
+				// finalImg = imaging.Paste(finalImg, subImg, image.Point{sprite.SourceRect.X, sprite.SourceRect.Y})
 				subImg = finalImg
 			}
 			// 如果需要旋转图片

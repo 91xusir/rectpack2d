@@ -62,11 +62,8 @@ func runBenchmark(options* Options) {
 	}
 
 	// 读取输入目录中的图片文件
-	size2Ds, imagePaths, sourceRects, err := readImageFiles()
-	if err != nil {
-		fmt.Printf("错误: %v\n", err)
-		os.Exit(1)
-	}
+	size2Ds, imagePaths, sourceRects := readImageFiles()
+
 	pakers := make([]*rectpack.Packer, 0)
 	// 创建打包器并打包当前批次的图片
 	packer := packing(size2Ds,options)

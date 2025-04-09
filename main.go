@@ -5,11 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"image/png"
 	"os"
 	"path/filepath"
 	"rectpack2d/rectpack"
 	"time"
+	"github.com/disintegration/imaging"
 )
 
 const (
@@ -44,6 +44,7 @@ type Options struct {
 	IsSameDetection       bool               //相同检测
 	IsAutoSize            bool               //是否自动收缩
 	Algorithm             rectpack.Heuristic // 算法
+	PowerOfTwo            bool               //是否使用2的幂
 }
 
 // SpriteInfo 存储精灵图的信息
@@ -76,9 +77,9 @@ type MultiAtlasData struct {
 		Timestamp string `json:"timestamp"`
 	} `json:"meta"`
 	Atlases []struct {
-		Atlas  string                `json:"atlas"`
+		Atlas   string                `json:"atlas"`
 		Sprites map[string]SpriteInfo `json:"sprites"`
-		Size   struct {
+		Size    struct {
 			W int `json:"w"`
 			H int `json:"h"`
 		} `json:"size"`
@@ -104,9 +105,9 @@ func generateMultiAtlasJSON(atlasMappings []map[string]SpriteInfo, atlasImagePat
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 		Atlases: make([]struct {
-			Atlas  string                `json:"atlas"`
+			Atlas   string                `json:"atlas"`
 			Sprites map[string]SpriteInfo `json:"sprites"`
-			Size   struct {
+			Size    struct {
 				W int `json:"w"`
 				H int `json:"h"`
 			} `json:"size"`
@@ -159,7 +160,7 @@ func outputResult(packer *rectpack.Packer) {
 	fmt.Printf("未打包矩形数量: %d\n\n", len(packer.GetUnpackedRects()))
 }
 
-func packing(sizes []rectpack.Size2D, options* Options) *rectpack.Packer {
+func packing(sizes []rectpack.Size2D, options *Options) *rectpack.Packer {
 	if debugInfo.IsDebug {
 		start := time.Now() // 记录开始时间
 		defer func() {
@@ -186,21 +187,7 @@ func packing(sizes []rectpack.Size2D, options* Options) *rectpack.Packer {
 	return packer
 }
 
-func main() {
-	if debugInfo.IsDebug {
-		start := time.Now() // 记录开始时间
-		defer func() {
-			elapsed := time.Since(start) // 计算耗时
-			debugInfo.TotalTime = elapsed
-			fmt.Printf("图片预处理(裁切等)耗时: %v\n", debugInfo.ProcessImageTime)
-			fmt.Printf("文件排序耗时: %v\n", debugInfo.FileSortTime)
-			fmt.Printf("算法耗时:%v\n", debugInfo.PackTime)
-			fmt.Printf("图集创建耗时:%v\n", debugInfo.CreateAtlasImageTime)
-			fmt.Printf("JSON元数据创建耗时:%v\n", debugInfo.CreateJsonTime)
-			fmt.Printf("总耗时:%v\n", debugInfo.TotalTime)
-		}()
-	}
-	
+func flagArgs() {
 	// 定义命令行参数
 	unpackPath := flag.String("unpack", "", "解包路径")
 	inputDirPtr := flag.String("input", "input", "输入目录")
@@ -212,12 +199,13 @@ func main() {
 	widthPtr := flag.Int("width", 4096, "打包区域宽度")
 	heightPtr := flag.Int("height", 4096, "打包区域高度")
 	rotationPtr := flag.Bool("rotate", true, "允许矩形旋转")
-	algorithmPtr := flag.String("algorithm", "Skyline", "打包算法 (MaxRects, Guillotine, Skyline)")
+	algorithmPtr := flag.String("algorithm", "Guillotine", "打包算法 (MaxRects, Guillotine)")
 	variantPtr := flag.String("variant", "BottomLeft", "打包算法变体 (BestShortSideFit, BestLongSideFit, BestAreaFit)")
 	autoSizePtr := flag.Bool("auto-size", true, "启用自动布局区域收缩优化")
+	powOfTwo := flag.Bool("pow-of-two", false, "启用2的幂")
 	flag.Parse()
 
-	// 创建选项对象
+	// 创建对象
 	options = Options{
 		UnpackPath:            *unpackPath,
 		InputDir:              *inputDirPtr,
@@ -232,103 +220,91 @@ func main() {
 		IsSameDetection:       false,
 		IsAutoSize:            *autoSizePtr,
 		Algorithm:             rectpack.ResolveAlgorithm(*algorithmPtr, *variantPtr),
+		PowerOfTwo:            *powOfTwo,
 	}
-	
-	if options.UnpackPath != ""  {
+	// 解包
+	if options.UnpackPath != "" {
 		unpack()
 		os.Exit(0)
 	}
+}
 
-	// 创建输出目录（如果不存在）
-	if err := os.MkdirAll(options.OutputDir, 0755); err != nil {
-		fmt.Printf("创建输出目录失败: %v\n", err)
-		os.Exit(1)
+func main() {
+	if debugInfo.IsDebug {
+		start := time.Now() // 记录开始时间
+		defer func() {
+			elapsed := time.Since(start) // 计算耗时
+			debugInfo.TotalTime = elapsed
+			fmt.Printf("图片预处理(裁切等)耗时: %v\n", debugInfo.ProcessImageTime)
+			fmt.Printf("文件排序耗时: %v\n", debugInfo.FileSortTime)
+			fmt.Printf("算法耗时:%v\n", debugInfo.PackTime)
+			fmt.Printf("图集创建耗时:%v\n", debugInfo.CreateAtlasImageTime)
+			fmt.Printf("JSON元数据创建耗时:%v\n", debugInfo.CreateJsonTime)
+			fmt.Printf("总耗时:%v\n", debugInfo.TotalTime)
+		}()
 	}
+
+	flagArgs()
 
 	// 读取输入目录中的图片文件
-	size2Ds, imagePaths, sourceRects, err := readImageFiles()
-	if err != nil {
-		fmt.Printf("错误: %v\n", err)
-		os.Exit(1)
-	}
+	size2Ds, imagePaths, sourceRects := readImageFiles()
 
-	pakers := make([]*rectpack.Packer, 0)
+	pakerList := make([]*rectpack.Packer, 0)
 	// 创建打包器并打包当前批次的图片
 	packer := packing(size2Ds, &options)
-	// 输出当前图集的打包结果
+	// 输出当前打包结果
 	outputResult(packer)
-	pakers = append(pakers, packer)
+
+	pakerList = append(pakerList, packer)
+
 	for unpackedRects := packer.GetUnpackedRects(); len(unpackedRects) > 0; {
 		p := packing(unpackedRects, &options)
 		outputResult(p)
-		pakers = append(pakers, p)
+		pakerList = append(pakerList, p)
 		unpackedRects = p.GetUnpackedRects()
 	}
-	atlasImages := make([]image.Image, 0)
+
+	atlasList := make([]*image.NRGBA, 0)
 	multiSpiteInfo := make([]map[string]SpriteInfo, 0)
-	
-	for atlasIndex, packer := range pakers {
+
+	for atlasIndex, packer := range pakerList {
 		atlasImage, spriteInfoMapping, err := CreateAtlasImage(packer, imagePaths, sourceRects)
 		if err != nil {
 			fmt.Printf("生成图集 #%d 失败: %v\n", atlasIndex, err)
 			continue
 		}
-		atlasImages = append(atlasImages, atlasImage)
+		atlasList = append(atlasList, atlasImage)
 		multiSpiteInfo = append(multiSpiteInfo, spriteInfoMapping)
 	}
 	atlasImagePaths := make([]string, 0)
-	if len(atlasImages) == 1 {
-		outputPath := filepath.Join(options.OutputDir, "atlas.png")
-		atlasImagePaths = append(atlasImagePaths, outputPath)
-		// 确保输出目录存在，而不是将输出路径创建为目录
-		if err := os.MkdirAll(options.OutputDir, 0755); err != nil {
-			fmt.Printf("创建输出目录失败: %v\n", err)
-			os.Exit(1)
-		}
-		// 保存图集图像
-		file, err := os.Create(outputPath)
-		if err != nil {
-			fmt.Printf("创建文件失败: %v\n", err)
-			os.Exit(1)
-		}
-		defer file.Close()
-		if err := png.Encode(file, atlasImages[0]); err != nil {
-			fmt.Printf("保存图像失败: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
-		for i, atlasImage := range atlasImages {
-			outputPath := filepath.Join(options.OutputDir, fmt.Sprintf("atlas_%d.png", i))
-			atlasImagePaths = append(atlasImagePaths, outputPath)
-			// 确保输出目录存在，而不是将输出路径创建为目录
-			if err := os.MkdirAll(options.OutputDir, 0755); err != nil {
-				fmt.Printf("创建输出目录失败: %v\n", err)
-				os.Exit(1)
-			}
-			// 保存图集图像
-			file, err := os.Create(outputPath)
-			if err != nil {
-				fmt.Printf("创建文件失败: %v\n", err)
-				os.Exit(1)
-			}
-			defer file.Close()
-			if err := png.Encode(file, atlasImage); err != nil {
-				fmt.Printf("保存图像失败: %v\n", err)
-				os.Exit(1)
-			}
-		}
-	}
-	// 生成当前图集的JSON元数据
 
+	// 确保输出目录存
+	if err := os.MkdirAll(options.OutputDir, 0755); err != nil {
+		fmt.Printf("创建输出目录失败: %v\n", err)
+		os.Exit(1)
+	}
+	start := time.Now()
+	for i, a := range atlasList {
+		var imageName string
+		if len(atlasList) == 1 {
+			imageName = "atlas.png"
+		} else {
+			imageName = fmt.Sprintf("atlas_%d.png", i)
+		}
+		outputPath := filepath.Join(options.OutputDir, imageName)
+		atlasImagePaths = append(atlasImagePaths, outputPath)
+		// 保存图集图像
+		file, _ := os.Create(outputPath)
+		imaging.Encode(file, a, imaging.PNG)
+		file.Close()
+	}
+	elapsed := time.Since(start)
+	fmt.Println("图像写入耗时:", elapsed)
+	// 图集的JSON元数据
 	multiAtlasJsonPath := filepath.Join(options.OutputDir, "atlases.json")
 	if err := generateMultiAtlasJSON(multiSpiteInfo, atlasImagePaths, multiAtlasJsonPath); err != nil {
 		fmt.Printf("生成JSON元数据失败: %v\n", err)
 		os.Exit(1)
 	}
-
-	fmt.Printf("\n成功生成 %d 个图集:\n", len(atlasImages))
-	for i, path := range atlasImagePaths {
-		fmt.Printf("- 图集 #%d: %s\n", i+1, path)
-	}
-	fmt.Printf("- 多图集元数据: %s\n\n", multiAtlasJsonPath)
+	fmt.Printf("- 图集元数据: %s\n\n", multiAtlasJsonPath)
 }

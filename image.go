@@ -3,36 +3,32 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"math"
 	"os"
 	"path/filepath"
 	"rectpack2d/rectpack"
 	"runtime"
-	"slices"
-	"strconv"
-	"strings"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/disintegration/imaging"
+	"github.com/maruel/natural"
 )
 
-// trimTransparentArea 检测并裁剪图像的透明区域，返回非透明区域的边界
-func trimTransparentArea(img image.Image) (image.Rectangle, bool) {
-	alphaThreshold := options.TransparencyThreshold
+// GetImageBBox 检测并裁剪图像的透明区域，返回非透明区域的边界
+func GetImageBBox(img image.Image, alphaThreshold uint32) image.Rectangle {
 	bounds := img.Bounds()
 	if bounds.Empty() {
-		return bounds, false
+		return image.Rectangle{}
 	}
-	// 初始化边界值
 	minX, minY := bounds.Max.X, bounds.Max.Y
 	maxX, maxY := bounds.Min.X, bounds.Min.Y
 	found := false
-	// 针对不同图像类型优化访问方式
 	switch src := img.(type) {
 	case *image.RGBA:
-		// 优化RGBA图像处理
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 			i := src.PixOffset(bounds.Min.X, y)
 			for x := bounds.Min.X; x < bounds.Max.X; x++ {
@@ -102,44 +98,10 @@ func trimTransparentArea(img image.Image) (image.Rectangle, bool) {
 		}
 	}
 	if !found {
-		return bounds, false // 图像完全透明
+		return bounds // 图像完全透明
 	}
 	// 创建非透明区域的边界矩形
-	return image.Rect(minX, minY, maxX+1, maxY+1), true
-}
-
-func sortFileBynName(paths []string) {
-	if debugInfo.IsDebug {
-		start := time.Now() // 记录开始时间
-		defer func() {
-			elapsed := time.Since(start) // 计算耗时
-			debugInfo.FileSortTime += elapsed
-		}()
-	}
-	// 按文件名排序（支持数字排序）
-	slices.SortFunc(paths, func(i, j string) int {
-		nameI := filepath.Base(i)
-		nameJ := filepath.Base(j)
-		// 尝试提取文件名中的数字部分
-		numI, errI := strconv.Atoi(strings.TrimSuffix(nameI, filepath.Ext(nameI)))
-		numJ, errJ := strconv.Atoi(strings.TrimSuffix(nameJ, filepath.Ext(nameJ)))
-		// 如果两个文件名都是纯数字，按数字大小排序
-		if errI == nil && errJ == nil {
-			if numI < numJ {
-				return -1
-			} else if numI > numJ {
-				return 1
-			}
-			return 0
-		}
-		// 否则按字符串排序
-		if nameI < nameJ {
-			return -1
-		} else if nameI > nameJ {
-			return 1
-		}
-		return 0
-	})
+	return image.Rect(minX, minY, maxX+1, maxY+1)
 }
 
 func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error) {
@@ -150,15 +112,12 @@ func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error)
 			debugInfo.ProcessImageTime += elapsed
 		}()
 	}
-
 	sourceRects := make([]image.Rectangle, len(paths))
 	sizes := make([]rectpack.Size2D, len(paths))
-
 	// 创建错误通道
 	errChan := make(chan error, len(paths))
 	// 创建互斥锁保护对errChan的并发访问
 	var mu sync.Mutex
-
 	// 使用Parallel函数并行处理图片
 	Parallel(0, len(paths), func(i int) {
 		path := paths[i]
@@ -169,10 +128,9 @@ func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error)
 			mu.Unlock()
 			return
 		}
-
 		if options.IsTrimTransparent {
 			// 完全解码图片以分析透明区域
-			src, _, err := image.Decode(file)
+			src, err := imaging.Decode(file)
 			file.Close()
 			if err != nil {
 				mu.Lock()
@@ -183,16 +141,10 @@ func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error)
 			// 获取原始尺寸
 			origBounds := src.Bounds()
 			sourceRects[i] = origBounds
-			// 裁剪透明区域
-			trimRect, hasTrimmed := trimTransparentArea(src)
-			if hasTrimmed && (trimRect.Dx() < origBounds.Dx() || trimRect.Dy() < origBounds.Dy()) {
-				// 使用裁剪后的尺寸
-				sizes[i] = rectpack.NewSize2DByID(i, trimRect.Dx(), trimRect.Dy())
-				sourceRects[i] = trimRect
-			} else {
-				// 使用原始尺寸
-				sizes[i] = rectpack.NewSize2DByID(i, origBounds.Dx(), origBounds.Dy())
-			}
+			// 获取透明边界区域
+			trimRect := GetImageBBox(src, options.TransparencyThreshold)
+			sizes[i] = rectpack.NewSize2DByID(i, trimRect.Dx(), trimRect.Dy())
+			sourceRects[i] = trimRect
 		} else {
 			// 只解码图片头部以获取尺寸信息
 			cfg, _, err := image.DecodeConfig(file)
@@ -220,31 +172,31 @@ func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error)
 }
 
 // readImageFiles 读取目录中的所有图片文件并返回它们的尺寸
-func readImageFiles() ([]rectpack.Size2D, []string, []image.Rectangle, error) {
+func readImageFiles() ([]rectpack.Size2D, []string, []image.Rectangle) {
 	// 确保输入目录存在
 	if _, err := os.Stat(options.InputDir); os.IsNotExist(err) {
-		return nil, nil, nil, fmt.Errorf("输入目录 %s 不存在", options.InputDir)
+		panic(fmt.Errorf("输入目录 %s 不存在", options.InputDir))
 	}
-	// 获取所有PNG图片文件
 	pattern := filepath.Join(options.InputDir, "*.png")
-	imagePaths, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	// 按文件名排序
+	imagePaths, _ := filepath.Glob(pattern)
+
+	// 是否按文件名排序
 	if options.IsFilesSort {
-		sortFileBynName(imagePaths)
+		sort.Sort(natural.StringSlice(imagePaths))
 	}
 	if len(imagePaths) == 0 {
-		return nil, nil, nil, fmt.Errorf("在 %s 目录中没有找到PNG图片", options.InputDir)
+		panic(fmt.Errorf("输入目录 %s 中没有找到任何图片文件", options.InputDir))
 	}
 	fmt.Printf("找到 %d 个图片文件\n", len(imagePaths))
 	if options.IsTrimTransparent {
 		fmt.Println("已开启透明区域裁切...")
 	}
 	size2Ds, sourceRects, err := processImages(imagePaths)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Printf("预先处理 %d 个图片文件\n", len(size2Ds))
-	return size2Ds, imagePaths, sourceRects, err
+	return size2Ds, imagePaths, sourceRects
 }
 
 func nextPowerOfTwo(n int) int {
@@ -255,8 +207,7 @@ func nextPowerOfTwo(n int) int {
 }
 
 // CreateAtlasImage 创建图集图像
-func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects []image.Rectangle) (image.Image, map[string]SpriteInfo, error) {
-
+func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects []image.Rectangle) (*image.NRGBA, map[string]SpriteInfo, error) {
 	if debugInfo.IsDebug {
 		start := time.Now() // 记录开始时间
 		defer func() {
@@ -264,48 +215,41 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 			debugInfo.CreateAtlasImageTime += elapsed
 		}()
 	}
-
 	// 获取图集所需的最终尺寸
 	atlasSize := packer.MinSize()
-	spriteInfoMapping := make(map[string]SpriteInfo, len(packer.GetPackedRects()))
-	dstImage := image.NewNRGBA(image.Rect(0, 0, atlasSize.Width, atlasSize.Height))
+	if options.PowerOfTwo {
+		atlasSize.Width = nextPowerOfTwo(atlasSize.Width)
+		atlasSize.Height = nextPowerOfTwo(atlasSize.Height)
+	}
 
+	spriteInfoMapping := make(map[string]SpriteInfo, len(packer.GetPackedRects()))
+	dstImage := imaging.New(atlasSize.Width, atlasSize.Height, color.NRGBA{0, 0, 0, 0})
 	// 创建互斥锁保护对dstImage和spriteInfoMapping的并发访问
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(packer.GetPackedRects()))
-
 	// 添加并发控制
 	maxWorkers := runtime.NumCPU()
 	semaphore := make(chan struct{}, maxWorkers)
-
 	// 遍历每个打包的矩形
 	for _, rect := range packer.GetPackedRects() {
 		wg.Add(1)
 		semaphore <- struct{}{} // 获取信号量
-
 		go func(r rectpack.Rect2D) {
 			defer wg.Done()
 			defer func() { <-semaphore }() // 释放信号量
-
 			// 矩形的ID是路径的索引
 			path := imagePaths[r.ID]
 			file, err := os.Open(path)
-			if err != nil {
-				errChan <- fmt.Errorf("无法打开图片 %s: %v", path, err)
-				return
-			}
-
-			srcImage, _, err := image.Decode(file)
-			if err != nil {
-				file.Close()
-				errChan <- fmt.Errorf("无法解码图片 %s: %v", path, err)
-				return
-			}
+			srcImage, err := imaging.Decode(file)
 			file.Close()
+			if err != nil {
+				errChan <- fmt.Errorf("%s: %v", path, err)
+				return
+			}
 
 			origBounds := srcImage.Bounds()
-			sourceRect := sourceRects[r.ID]
+			srcRect := sourceRects[r.ID]
 
 			// 检查是否需要旋转
 			isRotated := false
@@ -313,15 +257,14 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 				isRotated = true
 				srcImage = imaging.Rotate270(srcImage)
 				origHeight := origBounds.Dy()
-				newMinX := origHeight - sourceRect.Min.Y - sourceRect.Dy()
-				newMinY := sourceRect.Min.X
-				newWidth := sourceRect.Dy()
-				newHeight := sourceRect.Dx()
-				sourceRect = image.Rect(newMinX, newMinY, newMinX+newWidth, newMinY+newHeight)
+				newMinX := origHeight - srcRect.Min.Y - srcRect.Dy()
+				newMinY := srcRect.Min.X
+				newWidth := srcRect.Dy()
+				newHeight := srcRect.Dx()
+				srcRect = image.Rect(newMinX, newMinY, newMinX+newWidth, newMinY+newHeight)
 			}
 
 			origBounds = srcImage.Bounds() // 旋转后的
-
 			// 创建精灵信息
 			spriteInfo := SpriteInfo{}
 			spriteInfo.Filename = filepath.Base(path)
@@ -334,20 +277,19 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 			spriteInfo.SourceSize.H = origBounds.Dy()
 
 			// 检查是否进行了裁剪
-			isTrimmed := sourceRect.Min.X > 0 || sourceRect.Min.Y > 0 ||
-				sourceRect.Dx() < origBounds.Dx() || sourceRect.Dy() < origBounds.Dy()
+			isTrimmed := srcRect.Min.X > 0 || srcRect.Min.Y > 0 ||
+				srcRect.Dx() < origBounds.Dx() || srcRect.Dy() < origBounds.Dy()
 			if isTrimmed {
 				spriteInfo.Trimmed = true
-				spriteInfo.SourceRect.X = sourceRect.Min.X
-				spriteInfo.SourceRect.Y = sourceRect.Min.Y
-				spriteInfo.SourceRect.W = sourceRect.Dx()
-				spriteInfo.SourceRect.H = sourceRect.Dy()
+				spriteInfo.SourceRect.X = srcRect.Min.X
+				spriteInfo.SourceRect.Y = srcRect.Min.Y
+				spriteInfo.SourceRect.W = srcRect.Dx()
+				spriteInfo.SourceRect.H = srcRect.Dy()
 			}
 
-			// 将图片的裁剪部分绘制到目标矩形的位置
+		
 			dstRect := image.Rect(r.X, r.Y, r.X+r.Width, r.Y+r.Height)
-
-			// 使用互斥锁保护对共享资源的访问
+			
 			mu.Lock()
 			// 绘制图片
 			//dstImage 目标图像
@@ -355,7 +297,7 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 			//srcImage 源图像
 			//sourceRect.Min 源矩形的左上角坐标
 			//draw.Src 绘制操作的选项，这里是使用源图像的原始像素
-			draw.Draw(dstImage, dstRect, srcImage, sourceRect.Min, draw.Src)
+			draw.Draw(dstImage, dstRect, srcImage, srcRect.Min, draw.Src)
 			spriteInfoMapping[path] = spriteInfo
 			mu.Unlock()
 
