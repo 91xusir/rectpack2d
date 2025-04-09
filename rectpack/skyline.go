@@ -44,25 +44,21 @@ func (p *skylinePack) Reset(width, height int) {
 
 func (p *skylinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 	for len(sizes) > 0 {
-
 		var bestNode Rect2D
 		bestScore1 := math.MaxInt
 		bestScore2 := math.MaxInt
 		bestBinIndex := -1
 		bestSizeIndex := -1
-
 		for i, size := range sizes {
 			var score1, score2, index int
 			var newNode Rect2D
 			padSize(&size, padding)
-
 			switch p.levelSelect {
 			case MinWaste:
 				newNode = p.findMinWaste(size.Width, size.Height, &score2, &score1, &index)
 			default: // LevelBottomLeft or invalid
 				newNode = p.findBottomLeft(size.Width, size.Height, &score1, &score2, &index)
 			}
-
 			if newNode.Height != 0 {
 				if score1 < bestScore1 || (score1 == bestScore1 && score2 < bestScore2) {
 					bestNode = newNode
@@ -85,7 +81,6 @@ func (p *skylinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 		p.idMaptoRotateCount[bestNode.ID] += bestNode.RotatedCount
 		sizes = slices.Delete(sizes, bestSizeIndex, bestSizeIndex+1)
 	}
-
 	return sizes
 }
 

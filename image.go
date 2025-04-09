@@ -221,13 +221,6 @@ func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error)
 
 // readImageFiles 读取目录中的所有图片文件并返回它们的尺寸
 func readImageFiles() ([]rectpack.Size2D, []string, []image.Rectangle, error) {
-	if debugInfo.IsDebug {
-		start := time.Now() // 记录开始时间
-		defer func() {
-			elapsed := time.Since(start) // 计算耗时
-			fmt.Printf("读取图片文件耗时: %s\n", elapsed)
-		}()
-	}
 	// 确保输入目录存在
 	if _, err := os.Stat(options.InputDir); os.IsNotExist(err) {
 		return nil, nil, nil, fmt.Errorf("输入目录 %s 不存在", options.InputDir)

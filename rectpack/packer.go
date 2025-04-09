@@ -254,7 +254,7 @@ func (p *Packer) Shrink() bool {
 
 	// 先测试最小尺寸是否可行
 	p.algo.Reset(minSize, minSize)
-	failed := p.algo.Insert(p.padding, sizes...)
+	failed := p.algo.Insert(p.padding, slices.Clone(sizes)...)
 	successful := len(failed) == 0
 
 	// 如果最小尺寸就能打包成功，直接返回
@@ -267,7 +267,7 @@ func (p *Packer) Shrink() bool {
 	for !successful && maxSize < 10000 { // 设置一个合理的上限
 		maxSize *= 2
 		p.algo.Reset(maxSize, maxSize)
-		failed = p.algo.Insert(p.padding, sizes...)
+		failed = p.algo.Insert(p.padding, slices.Clone(sizes)...)
 		successful = len(failed) == 0
 	}
 	if !successful {
@@ -281,7 +281,7 @@ func (p *Packer) Shrink() bool {
 	for minSize < maxSize-1 {
 		midSize := (minSize + maxSize) / 2
 		p.algo.Reset(midSize, midSize)
-		failed = p.algo.Insert(p.padding, sizes...)
+		failed = p.algo.Insert(p.padding, slices.Clone(sizes)...)
 		successful = len(failed) == 0
 		if successful {
 			maxSize = midSize
@@ -298,7 +298,7 @@ func (p *Packer) Shrink() bool {
 	// 尝试减小高度
 	for h := bestSize - 1; h >= bestSize/2; h-- {
 		p.algo.Reset(optimalWidth, h)
-		failed = p.algo.Insert(p.padding, sizes...)
+		failed = p.algo.Insert(p.padding, slices.Clone(sizes)...)
 		successful = len(failed) == 0
 
 		if successful {
@@ -311,7 +311,7 @@ func (p *Packer) Shrink() bool {
 	// 尝试减小宽度
 	for w := bestSize - 1; w >= bestSize/2; w-- {
 		p.algo.Reset(w, optimalHeight)
-		failed = p.algo.Insert(p.padding, sizes...)
+		failed = p.algo.Insert(p.padding, slices.Clone(sizes)...)
 		successful = len(failed) == 0
 		if successful {
 			optimalWidth = w
@@ -322,7 +322,7 @@ func (p *Packer) Shrink() bool {
 
 	// 最后一次尝试使用最佳尺寸
 	p.algo.Reset(optimalWidth, optimalHeight)
-	failed = p.algo.Insert(p.padding, sizes...)
+	failed = p.algo.Insert(p.padding, slices.Clone(sizes)...)
 	successful = len(failed) == 0
 
 	if successful {
@@ -332,7 +332,7 @@ func (p *Packer) Shrink() bool {
 		// 恢复原始尺寸
 		fmt.Println("优化空间失败")
 		p.algo.Reset(origSize.Width, origSize.Height)
-		p.algo.Insert(p.padding, sizes...)
+		p.algo.Insert(p.padding, slices.Clone(sizes)...)
 		return false
 	}
 }

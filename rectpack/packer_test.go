@@ -243,6 +243,7 @@ func runBenchmark(algoName, variant string) {
 	packer, _ := NewPacker(5120, 5120, heuristic)
 	packer.Insert(sizes...)
 	packer.Pack()
+	packer.Shrink()
 	elapsed := time.Since(start) // 计算耗时
 	fmt.Printf("%s-%s | 利用率:%.2f%% | 用时: %s\n", algoName, variant, packer.GetAreaUsedRate(true)*100, elapsed)
 }
