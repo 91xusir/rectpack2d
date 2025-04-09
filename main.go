@@ -9,12 +9,15 @@ import (
 	"path/filepath"
 	"rectpack2d/rectpack"
 	"time"
+
 	"github.com/disintegration/imaging"
 )
 
 const (
 	VERSION = "0.1.0"
 )
+
+type App struct{}
 
 var (
 	options   Options
@@ -77,12 +80,12 @@ type MultiAtlasData struct {
 		Timestamp string `json:"timestamp"`
 	} `json:"meta"`
 	Atlases []struct {
-		Atlas   string                `json:"atlas"`
-		Sprites map[string]SpriteInfo `json:"sprites"`
-		Size    struct {
+		AtlasName  string                `json:"atlasName"`
+		SpriteList map[string]SpriteInfo `json:"spriteList"`
+		TotalSize       struct {
 			W int `json:"w"`
 			H int `json:"h"`
-		} `json:"size"`
+		} `json:"totalSize"`
 	} `json:"atlases"`
 }
 
@@ -105,20 +108,20 @@ func generateMultiAtlasJSON(atlasMappings []map[string]SpriteInfo, atlasImagePat
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		},
 		Atlases: make([]struct {
-			Atlas   string                `json:"atlas"`
-			Sprites map[string]SpriteInfo `json:"sprites"`
-			Size    struct {
+			AtlasName  string                `json:"atlasName"`
+			SpriteList map[string]SpriteInfo `json:"spriteList"`
+			TotalSize       struct {
 				W int `json:"w"`
 				H int `json:"h"`
-			} `json:"size"`
+			} `json:"totalSize"`
 		}, len(atlasMappings)),
 	}
 
 	// 填充每个图集的信息
 	for i, mapping := range atlasMappings {
 		atlas := &multiAtlasData.Atlases[i]
-		atlas.Atlas = filepath.Base(atlasImagePaths[i])
-		atlas.Sprites = make(map[string]SpriteInfo)
+		atlas.AtlasName = filepath.Base(atlasImagePaths[i])
+		atlas.SpriteList = make(map[string]SpriteInfo)
 
 		// 计算图集的总尺寸
 		var maxWidth, maxHeight int
@@ -132,12 +135,12 @@ func generateMultiAtlasJSON(atlasMappings []map[string]SpriteInfo, atlasImagePat
 				maxHeight = bottom
 			}
 			// 添加到帧集合
-			atlas.Sprites[spriteInfo.Filename] = spriteInfo
+			atlas.SpriteList[spriteInfo.Filename] = spriteInfo
 		}
 
 		// 设置图集尺寸
-		atlas.Size.W = maxWidth
-		atlas.Size.H = maxHeight
+		atlas.TotalSize.W = maxWidth
+		atlas.TotalSize.H = maxHeight
 	}
 
 	// 将数据编码为JSON
@@ -190,7 +193,7 @@ func packing(sizes []rectpack.Size2D, options *Options) *rectpack.Packer {
 func flagArgs() {
 	// 定义命令行参数
 	unpackPath := flag.String("unpack", "", "解包路径")
-	inputDirPtr := flag.String("input", "input", "输入目录")
+	inputDirPtr := flag.String("input", "input2", "输入目录")
 	outputDirPtr := flag.String("output", "output", "输出目录")
 	paddingPtr := flag.Int("padding", 0, "填充")
 	trimPtr := flag.Bool("trim", true, "修剪透明部分")
@@ -199,8 +202,8 @@ func flagArgs() {
 	widthPtr := flag.Int("width", 4096, "打包区域宽度")
 	heightPtr := flag.Int("height", 4096, "打包区域高度")
 	rotationPtr := flag.Bool("rotate", true, "允许矩形旋转")
-	algorithmPtr := flag.String("algorithm", "Guillotine", "打包算法 (MaxRects, Guillotine)")
-	variantPtr := flag.String("variant", "BottomLeft", "打包算法变体 (BestShortSideFit, BestLongSideFit, BestAreaFit)")
+	algorithmPtr := flag.String("algorithm", "MaxRects", "打包算法 (MaxRects, Guillotine)")
+	variantPtr := flag.String("variant", "BestAreaFit", "打包算法变体 (BestShortSideFit, BestLongSideFit, BestAreaFit)")
 	autoSizePtr := flag.Bool("auto-size", true, "启用自动布局区域收缩优化")
 	powOfTwo := flag.Bool("pow-of-two", false, "启用2的幂")
 	flag.Parse()
@@ -247,7 +250,7 @@ func main() {
 	flagArgs()
 
 	// 读取输入目录中的图片文件
-	size2Ds, imagePaths, sourceRects := readImageFiles()
+	size2Ds, imagePaths, sourceRects := readImageFiles(&options)
 
 	pakerList := make([]*rectpack.Packer, 0)
 	// 创建打包器并打包当前批次的图片

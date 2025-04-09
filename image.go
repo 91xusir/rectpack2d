@@ -104,7 +104,7 @@ func GetImageBBox(img image.Image, alphaThreshold uint32) image.Rectangle {
 	return image.Rect(minX, minY, maxX+1, maxY+1)
 }
 
-func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error) {
+func processImages(paths []string, options *Options) ([]rectpack.Size2D, []image.Rectangle, error) {
 	if debugInfo.IsDebug {
 		start := time.Now() // 记录开始时间
 		defer func() {
@@ -172,7 +172,7 @@ func processImages(paths []string) ([]rectpack.Size2D, []image.Rectangle, error)
 }
 
 // readImageFiles 读取目录中的所有图片文件并返回它们的尺寸
-func readImageFiles() ([]rectpack.Size2D, []string, []image.Rectangle) {
+func readImageFiles(options *Options) ([]rectpack.Size2D, []string, []image.Rectangle) {
 	// 确保输入目录存在
 	if _, err := os.Stat(options.InputDir); os.IsNotExist(err) {
 		panic(fmt.Errorf("输入目录 %s 不存在", options.InputDir))
@@ -191,7 +191,7 @@ func readImageFiles() ([]rectpack.Size2D, []string, []image.Rectangle) {
 	if options.IsTrimTransparent {
 		fmt.Println("已开启透明区域裁切...")
 	}
-	size2Ds, sourceRects, err := processImages(imagePaths)
+	size2Ds, sourceRects, err := processImages(imagePaths, options)
 	if err != nil {
 		panic(err)
 	}
@@ -253,7 +253,7 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 
 			// 检查是否需要旋转
 			isRotated := false
-			if packer.GetIdMapToRotateCount()[r.ID]&1 != 0 { // 奇数说明旋转了
+			if packer.GetIdMapRotated()[r.ID] {
 				isRotated = true
 				srcImage = imaging.Rotate270(srcImage)
 				origHeight := origBounds.Dy()
@@ -287,9 +287,8 @@ func CreateAtlasImage(packer *rectpack.Packer, imagePaths []string, sourceRects 
 				spriteInfo.SourceRect.H = srcRect.Dy()
 			}
 
-		
 			dstRect := image.Rect(r.X, r.Y, r.X+r.Width, r.Y+r.Height)
-			
+
 			mu.Lock()
 			// 绘制图片
 			//dstImage 目标图像
