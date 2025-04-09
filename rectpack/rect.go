@@ -92,14 +92,8 @@ func (sz *Size2D) Ratio() float64 {
 
 // Rect2D 描述了二维空间中的一个位置（左上角）和尺寸。
 type Rect2D struct {
-	// Point2D 表示矩形的左上角坐标。
 	Point2D
-	// Size2D 表示矩形的宽度和高度。
 	Size2D
-
-	IsRotated bool
-
-	RotatedCount int
 }
 
 // NewRect 初始化一个使用指定点和尺寸值的新矩形。

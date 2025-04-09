@@ -76,7 +76,7 @@ func unpack() error {
 	for _, atlas := range multiAtlasData.Atlases {
 		// 获取图集图片路径
 		atlasDir := filepath.Dir(options.UnpackPath)
-		atlasImagePath := filepath.Join(atlasDir, atlas.Atlas)
+		atlasImagePath := filepath.Join(atlasDir, atlas.AtlasName)
 
 		// 加载图集图片
 		atlasFile, err := os.Open(atlasImagePath)
@@ -96,8 +96,8 @@ func unpack() error {
 			name   string
 			sprite SpriteInfo
 		}
-		spriteList := make([]spriteEntry, 0, len(atlas.Sprites))
-		for name, sprite := range atlas.Sprites {
+		spriteList := make([]spriteEntry, 0, len(atlas.SpriteList))
+		for name, sprite := range atlas.SpriteList {
 			spriteList = append(spriteList, spriteEntry{name, sprite})
 		}
 
@@ -113,17 +113,17 @@ func unpack() error {
 			// 创建新图片
 			subImg := imaging.New(sprite.Region.W, sprite.Region.H, color.NRGBA{0, 0, 0, 0})
 			// 绘制子图
-			subImg = imaging.Crop(atlasImg, image.Rect(sprite.Region.X, sprite.Region.Y, 
+			subImg = imaging.Crop(atlasImg, image.Rect(sprite.Region.X, sprite.Region.Y,
 				sprite.Region.X+sprite.Region.W, sprite.Region.Y+sprite.Region.H))
 
-			// 如果需要处理修剪的图片
+			// 还原被修剪的图片
 			if sprite.Trimmed {
 				// 创建一个与原始尺寸相同的透明图片
 				finalImg := imaging.New(sprite.SourceSize.W, sprite.SourceSize.H, color.NRGBA{0, 0, 0, 0})
 				// 将子图绘制到正确位置
-				dstPoint := image.Point{sprite.SourceRect.X, sprite.SourceRect.Y}                // 粘贴起始点
+				dstPoint := image.Point{sprite.SourceRect.X, sprite.SourceRect.Y}                    // 粘贴起始点
 				dstRect := image.Rectangle{Min: dstPoint, Max: dstPoint.Add(subImg.Bounds().Size())} // 目标区域：左上角为 dstPoint，大小与 subImg 相同
-				draw.Draw(finalImg, dstRect,subImg, image.Point{0,0}, draw.Src)
+				draw.Draw(finalImg, dstRect, subImg, image.Point{0, 0}, draw.Src)
 				// finalImg = imaging.Paste(finalImg, subImg, image.Point{sprite.SourceRect.X, sprite.SourceRect.Y})
 				subImg = finalImg
 			}
@@ -133,7 +133,7 @@ func unpack() error {
 			}
 			// 构建保存路径
 			outputPath := filepath.Join(outputDir, name)
-			
+
 			// 使用互斥锁保护文件系统操作
 			mu.Lock()
 			// 确保输出子目录存在

@@ -6,56 +6,23 @@ import (
 	"slices"
 )
 
-// DefaultSize 定义了矩形包装器的默认最大宽度/高度值
 const DefaultSize = 4096
 
-// Packer 包含2D矩形包装器的状态
 type Packer struct {
-	// unpackedSize2Ds 包含尚未包装或无法包装的尺寸
 	unpackedSize2Ds []Size2D
-
-	// algo 是实现具体包装算法的实例
-	algo packAlgorithm
-
-	// sortFunc 定义在排序时用于比较尺寸大小的函数
-	//
-	// 默认值：SortArea
-	sortFunc SortFunc
-
-	// padding 定义矩形周围预留的空隙大小。值为0或负数
-	// 表示矩形将被紧密排列
-	//
-	// 默认值：0
-	padding int
-
-	// sortRev 表示是否启用反向排序
-	//
-	// 默认值：false
-	sortRev bool
-
-	// Online 表示矩形是否应该在插入时立即包装(在线模式)，
-	// 或者只是收集起来等待后续打包(离线模式)
-	//
-	// 在线/离线模式有以下权衡：
-	//
-	// * 在线包装更快，因为不需要排序或与其他矩形比较，
-	//   但会导致优化结果较差
-	// * 离线包装可能慢得多，但允许算法通过预先知道所有尺寸
-	//   并进行高效排序来实现最佳效果
-	//
-	// 除非需要实时包装和使用结果，否则建议使用离线模式(默认)。
-	// 对于创建纹理图集的任务，花费额外时间以最有效的方式准备图集是非常值得的
-	//
-	// 默认值：false
-	Online bool
+	algo            packAlgorithm
+	sortFunc        SortFunc
+	padding         int
+	sortRev         bool
+	Online          bool
 }
 
 func (p *Packer) MaxSize() Size2D {
 	return p.algo.MaxSize()
 }
 
-func (p *Packer) GetIdMapToRotateCount() map[int]int {
-	return p.algo.GetIdMaptoRotateCount()
+func (p *Packer) GetIdMapRotated() map[int]bool {
+	return p.algo.GetIdMapRotated()
 }
 
 // MinSize 包含所有已包装矩形所需的最小尺寸
@@ -367,7 +334,7 @@ func NewPacker(maxWidth, maxHeight int, heuristic Heuristic) (*Packer, error) {
 		return nil, fmt.Errorf("width and height must be greater than 0 (given %vx%x)", maxWidth, maxHeight)
 	}
 	p := &Packer{
-		sortFunc:         SortArea,
+		sortFunc: SortArea,
 	}
 	switch heuristic & typeMask {
 	case MaxRects:

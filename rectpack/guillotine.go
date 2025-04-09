@@ -17,7 +17,7 @@ type guillotinePack struct {
 
 func newGuillotine(width, height int, heuristic Heuristic) *guillotinePack {
 	var packer guillotinePack
-	packer.idMaptoRotateCount = make(map[int]int)
+	packer.idMapRotated = make(map[int]bool)
 
 	packer.Merge = true
 	packer.splitMethod = SplitMinimizeArea
@@ -97,15 +97,13 @@ func (p *guillotinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 		}
 		if bestFlipped {
 			newNode.Width, newNode.Height = newNode.Height, newNode.Width
-			if !newNode.IsRotated {
-				newNode.RotatedCount++
+			if !p.idMapRotated[newNode.ID] {
+				p.idMapRotated[newNode.ID] = true
 			}
-			newNode.IsRotated = true
 		} else {
-			if newNode.IsRotated {
-				newNode.RotatedCount++
+			if p.idMapRotated[newNode.ID] {
+				p.idMapRotated[newNode.ID] = false
 			}
-			newNode.IsRotated = false
 		}
 		p.splitByHeuristic(&p.freeRects[bestFreeRect], &newNode)
 		p.freeRects = slices.Delete(p.freeRects, bestFreeRect, bestFreeRect+1)
@@ -115,7 +113,6 @@ func (p *guillotinePack) Insert(padding int, sizes ...Size2D) []Size2D {
 		}
 		p.usedArea += newNode.Area()
 		unpadRect(&newNode, padding)
-		p.idMaptoRotateCount[newNode.ID]+=newNode.RotatedCount
 		p.packed = append(p.packed, newNode)
 	}
 	return sizes
@@ -159,51 +156,6 @@ func (p *guillotinePack) splitAlongAxis(freeRect, placedRect *Rect2D, splitHoriz
 	if right.Width > 0 && right.Height > 0 {
 		p.freeRects = append(p.freeRects, right)
 	}
-}
-
-func (p *guillotinePack) findPosition(width, height int, nodeIndex *int) Rect2D {
-	var bestNode Rect2D
-	bestScore := math.MaxInt
-	for i, freeRect := range p.freeRects {
-		if width == freeRect.Width && height == freeRect.Height {
-			bestNode.X = freeRect.X
-			bestNode.Y = freeRect.Y
-			bestNode.Width = width
-			bestNode.Height = height
-			bestScore = math.MinInt
-			*nodeIndex = i
-			break
-		} else if p.allowRotate && height == freeRect.Width && width == freeRect.Height {
-			bestNode.X = freeRect.X
-			bestNode.Y = freeRect.Y
-			bestNode.Width = height
-			bestNode.Height = width
-			bestScore = math.MinInt
-			*nodeIndex = i
-			break
-		} else if width <= freeRect.Width && height <= freeRect.Height {
-			score := p.scoreRect(width, height, &freeRect)
-			if score < bestScore {
-				bestNode.X = freeRect.X
-				bestNode.Y = freeRect.Y
-				bestNode.Width = width
-				bestNode.Height = height
-				bestScore = score
-				*nodeIndex = i
-			}
-		} else if p.allowRotate && height <= freeRect.Width && width <= freeRect.Height {
-			score := p.scoreRect(height, width, &freeRect)
-			if score < bestScore {
-				bestNode.X = freeRect.X
-				bestNode.Y = freeRect.Y
-				bestNode.Width = height
-				bestNode.Height = width
-				bestScore = score
-				*nodeIndex = i
-			}
-		}
-	}
-	return bestNode
 }
 
 func (p *guillotinePack) splitByHeuristic(freeRect, placedRect *Rect2D) {

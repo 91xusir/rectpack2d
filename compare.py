@@ -32,7 +32,7 @@ def compare_folders(input_dir, output_dir):
 
 # 示例用法
 if __name__ == "__main__":
-    input_folder = "input"     # 替换为你的实际路径
+    input_folder = "input2"     # 替换为你的实际路径
     output_folder = "output"   # 替换为你的实际路径
 
     diffs = compare_folders(input_folder, output_folder)
